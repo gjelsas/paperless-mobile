@@ -107,6 +107,7 @@ dependencies:
       ref: 'd637108a2a6e3e97a70304f00f1eda9511fb4f92'
       path: packages/pdfx
   markdown: ^7.1.1
+  diacritic: ^0.1.5
   # pdfrx: 
   #   git:
   #     url: https://github.com/astubenbord/pdfrx

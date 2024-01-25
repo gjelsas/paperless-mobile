@@ -7,7 +7,7 @@ import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 
 class AddCorrespondentPage extends StatelessWidget {
   final String? initialName;
-  const AddCorrespondentPage({Key? key, this.initialName}) : super(key: key);
+  const AddCorrespondentPage({super.key, this.initialName});
 
   @override
   Widget build(BuildContext context) {

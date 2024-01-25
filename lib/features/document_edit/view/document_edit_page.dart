@@ -18,6 +18,7 @@ import 'package:paperless_mobile/features/document_edit/cubit/document_edit_cubi
 import 'package:paperless_mobile/features/documents/view/pages/document_view.dart';
 import 'package:paperless_mobile/features/labels/tags/view/widgets/tags_form_field.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/label_form_field.dart';
+import 'package:paperless_mobile/features/labels/view/widgets/new/single_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/helpers/message_helpers.dart';
 import 'package:paperless_mobile/routing/routes/labels_route.dart';
@@ -209,26 +210,44 @@ class _DocumentEditPageState extends State<DocumentEditPage>
               if (currentUser.canViewCorrespondents)
                 Column(
                   children: [
-                    LabelFormField<Correspondent>(
-                      showAnyAssignedOption: false,
-                      showNotAssignedOption: false,
-                      onAddLabel: (currentInput) => CreateLabelRoute(
-                        LabelType.correspondent,
-                        name: currentInput,
-                      ).push<Correspondent>(context),
-                      addLabelText: S.of(context)!.addCorrespondent,
-                      labelText: S.of(context)!.correspondent,
-                      options: labelRepository.correspondents,
-                      initialValue: state.document.correspondent != null
-                          ? SetIdQueryParameter(
-                              id: state.document.correspondent!)
-                          : const UnsetIdQueryParameter(),
+                    SingleLabelSelectionFormBuilderField<Correspondent>(
                       name: fkCorrespondent,
-                      prefixIcon: const Icon(Icons.person_outlined),
-                      allowSelectUnassigned: true,
-                      canCreateNewLabel: currentUser.canCreateCorrespondents,
-                      suggestions: filteredSuggestions?.correspondents ?? [],
+                      initialValue: state.document.correspondent,
+                      searchHintText: S.of(context)!.startTyping,
+                      emptySearchMessage: S.of(context)!.noMatchesFound,
+                      emptyOptionsMessage: S.of(context)!.noCorrespondentsSetUp,
+                      enabled: true,
+                      prefixIcon: Icon(Icons.person_outlined),
+                      onAddLabel: (context, searchText) {
+                        return CreateLabelRoute(
+                          LabelType.correspondent,
+                          name: searchText,
+                        ).push<int>(context);
+                      },
+                      optionsSelector: (repository) =>
+                          repository.correspondents,
+                      addNewLabelText: S.of(context)!.addNewCorrespondent,
                     ),
+                    // LabelFormField<Correspondent>(
+                    //   showAnyAssignedOption: false,
+                    //   showNotAssignedOption: false,
+                    //   onAddLabel: (currentInput) => CreateLabelRoute(
+                    //     LabelType.correspondent,
+                    //     name: currentInput,
+                    //   ).push<Correspondent>(context),
+                    //   addLabelText: S.of(context)!.addCorrespondent,
+                    //   labelText: S.of(context)!.correspondent,
+                    //   options: labelRepository.correspondents,
+                    //   initialValue: state.document.correspondent != null
+                    //       ? SetIdQueryParameter(
+                    //           id: state.document.correspondent!)
+                    //       : const UnsetIdQueryParameter(),
+                    //   name: fkCorrespondent,
+                    //   prefixIcon: const Icon(Icons.person_outlined),
+                    //   allowSelectUnassigned: true,
+                    //   canCreateNewLabel: currentUser.canCreateCorrespondents,
+                    //   suggestions: filteredSuggestions?.correspondents ?? [],
+                    // ),
                   ],
                 ).padded(),
               // DocumentType form field
@@ -330,8 +349,7 @@ class _DocumentEditPageState extends State<DocumentEditPage>
   ) get _currentValues {
     final fkState = _formKey.currentState!;
 
-    final correspondentParam =
-        fkState.getRawValue<IdQueryParameter?>(fkCorrespondent);
+    final correspondent = fkState.getRawValue<Correspondent?>(fkCorrespondent);
     final documentTypeParam =
         fkState.getRawValue<IdQueryParameter?>(fkDocumentType);
     final storagePathParam =
@@ -339,10 +357,6 @@ class _DocumentEditPageState extends State<DocumentEditPage>
     final tagsParam = fkState.getRawValue<TagsQuery?>(fkTags);
     final title = fkState.getRawValue<String?>(fkTitle);
     final created = fkState.getRawValue<FormDateTime?>(fkCreatedDate);
-    final correspondent = switch (correspondentParam) {
-      SetIdQueryParameter(id: var id) => id,
-      _ => null,
-    };
     final documentType = switch (documentTypeParam) {
       SetIdQueryParameter(id: var id) => id,
       _ => null,
@@ -359,7 +373,7 @@ class _DocumentEditPageState extends State<DocumentEditPage>
 
     return (
       title,
-      correspondent,
+      correspondent?.id,
       documentType,
       storagePath,
       tags,

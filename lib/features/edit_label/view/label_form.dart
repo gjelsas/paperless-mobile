@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -36,14 +38,14 @@ class LabelForm<T extends Label> extends StatefulWidget {
   final GlobalKey<FormBuilderState>? formKey;
 
   const LabelForm({
-    Key? key,
+    super.key,
     required this.initialValue,
     required this.fromJsonT,
     this.additionalFields = const [],
     required this.submitButtonConfig,
     required this.autofocusNameField,
     this.formKey,
-  }) : super(key: key);
+  });
 
   @override
   State<LabelForm> createState() => _LabelFormState<T>();
@@ -174,9 +176,10 @@ class _LabelFormState<T extends Label> extends State<LabelForm<T>> {
           ...widget.initialValue?.toJson() ?? {},
           ..._formKey.currentState!.value
         };
+        final router = GoRouter.of(context);
         final parsed = widget.fromJsonT(mergedJson);
         final createdLabel = await widget.submitButtonConfig.onSubmit(parsed);
-        context.pop(createdLabel);
+        router.pop(createdLabel);
       } on PaperlessApiException catch (error, stackTrace) {
         showErrorMessage(context, error, stackTrace);
       } on PaperlessFormValidationException catch (exception) {
