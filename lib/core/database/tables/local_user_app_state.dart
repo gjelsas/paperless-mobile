@@ -15,9 +15,6 @@ class LocalUserAppState extends HiveObject {
   @HiveField(0)
   final String userId;
 
-  @HiveField(1)
-  DocumentFilter currentDocumentFilter;
-
   @HiveField(2)
   List<String> documentSearchHistory;
 
@@ -32,7 +29,6 @@ class LocalUserAppState extends HiveObject {
 
   LocalUserAppState({
     required this.userId,
-    this.currentDocumentFilter = const DocumentFilter(),
     this.documentSearchHistory = const [],
     this.documentsPageViewType = ViewType.list,
     this.documentSearchViewType = ViewType.list,

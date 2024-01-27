@@ -2,45 +2,42 @@ import 'package:animations/animations.dart';
 import 'package:collection/collection.dart';
 import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:go_router/go_router.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/repository/label_repository.dart';
-import 'package:paperless_mobile/features/labels/view/widgets/fullscreen_multi_selection_label_form.dart';
+import 'package:paperless_mobile/core/util/list_utils.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/types.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
-class SingleLabelSelectionFormBuilderField<T extends Label>
+class MultiLabelFilterSelectionFormBuilderField<T extends Label>
     extends StatelessWidget {
   /// The form field identifier
   final String name;
-  final int? initialValue;
+  final IdQueryParameter initialValue;
   final LabelRepositorySelector<T> optionsSelector;
-  final LabelOptionBuilder<T> optionBuilder;
-  final String searchHintText;
+  final MultiSelectionFilterOptionBuilder<T> optionBuilder;
+  final DisplayOptionBuilder<T> displayOptionBuilder;
   final String labelText;
+  final String searchHintText;
   final String emptySearchMessage;
   final String emptyOptionsMessage;
-  final String addNewLabelText;
   final bool enabled;
   final Widget prefixIcon;
-  final AddLabelCallback onAddLabel;
 
-  const SingleLabelSelectionFormBuilderField({
+  const MultiLabelFilterSelectionFormBuilderField({
     super.key,
     required this.name,
-    this.initialValue,
+    this.initialValue = const UnsetIdQueryParameter(),
     this.optionBuilder = _defaultOptionsBuilder,
+    this.displayOptionBuilder = _defaultDisplayOptionBuilder,
     required this.searchHintText,
     required this.emptySearchMessage,
     required this.emptyOptionsMessage,
     required this.enabled,
     required this.prefixIcon,
-    required this.onAddLabel,
     required this.optionsSelector,
-    required this.addNewLabelText,
     required this.labelText,
   });
 
@@ -48,29 +45,44 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
     BuildContext context,
     Label label,
     VoidCallback onSelected,
+    bool include,
+    bool exclude,
   ) {
     final documentCountText =
         S.of(context)!.documentsAssigned(label.documentCount ?? 0);
+
+    final trailing = !(include || exclude)
+        ? Text(
+            documentCountText,
+            style: Theme.of(context).textTheme.labelMedium,
+            textAlign: TextAlign.end,
+          )
+        : Icon(include ? Icons.check : Icons.clear);
     return ListTile(
+      enabled: label.documentCount != 0,
       title: Text(label.name),
-      trailing: Text(
-        documentCountText,
-        style: Theme.of(context).textTheme.labelMedium,
-        textAlign: TextAlign.end,
-      ),
+      trailing: trailing,
       onTap: onSelected,
     );
+  }
+
+  static Widget _defaultDisplayOptionBuilder(
+    BuildContext context,
+    Label label,
+  ) {
+    return Chip(label: Text(label.name));
   }
 
   @override
   Widget build(BuildContext context) {
     final repository = context.watch<LabelRepository>();
     final options = optionsSelector(repository);
-    return FormBuilderField<int>(
+    return FormBuilderField<IdQueryParameter>(
       name: name,
       initialValue: initialValue,
       builder: (field) {
-        return OpenContainer<int>(
+        final isEmpty = field.value is UnsetIdQueryParameter;
+        return OpenContainer<IdQueryParameter>(
           middleColor: Theme.of(context).colorScheme.background,
           closedColor: Theme.of(context).colorScheme.background,
           openColor: Theme.of(context).colorScheme.background,
@@ -80,35 +92,57 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
           tappable: enabled,
           closedBuilder: (context, openForm) => Container(
             margin: const EdgeInsets.only(top: 6),
-            child: TextField(
-              controller: TextEditingController(
-                text: options[field.value]?.name,
-              ),
-              onTap: openForm,
-              readOnly: true,
-              enabled: enabled,
+            child: InputDecorator(
+              isEmpty: isEmpty,
               decoration: InputDecoration(
-                hintText: options[field.value]?.name ?? labelText,
+                labelText: labelText,
+                contentPadding: const EdgeInsets.all(12),
                 prefixIcon: prefixIcon,
-                suffixIcon: field.value != null
+                enabled: enabled,
+                suffixIcon: field.value is! UnsetIdQueryParameter
                     ? IconButton(
                         icon: const Icon(Icons.clear),
-                        onPressed: () => field.didChange(null),
+                        onPressed: () {
+                          field.didChange(null);
+                        },
                       )
                     : null,
+              ),
+              child: SizedBox(
+                height: 32,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 4),
+                  itemBuilder: (context, index) => switch (field.value) {
+                    UnsetIdQueryParameter() => null,
+                    NotAssignedIdQueryParameter() =>
+                      Text(S.of(context)!.notAssigned),
+                    AnyAssignedIdQueryParameter() =>
+                      Text(S.of(context)!.anyAssigned),
+                    SetIdQueryParameter(includeIds: var ids) =>
+                      displayOptionBuilder(
+                        context,
+                        options[ids.elementAt(index)]!,
+                      ),
+                    null => null,
+                  },
+                  itemCount: switch (field.value) {
+                    SetIdQueryParameter(includeIds: var ids) => ids.length,
+                    _ => 0,
+                  },
+                ),
               ),
             ),
           ),
           openBuilder: (context, closeForm) {
-            return _FullScreenSingleLabelSelectionForm<T>(
+            return _FullScreenMultiLabelFilterSelection<T>(
               initialValue: field.value,
               optionBuilder: optionBuilder,
               searchHintText: searchHintText,
               emptySearchMessage: emptySearchMessage,
               emptyOptionsMessage: emptyOptionsMessage,
               optionSelector: optionsSelector,
-              onAddLabel: onAddLabel,
-              addNewLabelText: addNewLabelText,
             );
           },
           onClosed: (data) {
@@ -122,47 +156,39 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
   }
 }
 
-class _FullScreenSingleLabelSelectionForm<T extends Label>
+class _FullScreenMultiLabelFilterSelection<T extends Label>
     extends StatefulWidget {
-  final int? initialValue;
-  final LabelRepositorySelector<T> optionSelector;
-  final LabelOptionBuilder<T> optionBuilder;
-  final String searchHintText;
+  final IdQueryParameter? initialValue;
+  final MultiSelectionFilterOptionBuilder<T> optionBuilder;
   final String emptySearchMessage;
+  final String searchHintText;
   final String emptyOptionsMessage;
-  final String addNewLabelText;
-  final AddLabelCallback onAddLabel;
-  const _FullScreenSingleLabelSelectionForm({
+  final LabelRepositorySelector<T> optionSelector;
+
+  const _FullScreenMultiLabelFilterSelection({
     super.key,
     this.initialValue,
-    required this.optionSelector,
     required this.optionBuilder,
-    required this.searchHintText,
     required this.emptySearchMessage,
+    required this.searchHintText,
     required this.emptyOptionsMessage,
-    required this.onAddLabel,
-    required this.addNewLabelText,
+    required this.optionSelector,
   });
 
   @override
-  State<_FullScreenSingleLabelSelectionForm<T>> createState() =>
-      _FullScreenSingleLabelSelectionFormState<T>();
+  State<_FullScreenMultiLabelFilterSelection> createState() =>
+      __FullScreenMultiLabelFilterSelectionState();
 }
 
-class _FullScreenSingleLabelSelectionFormState<T extends Label>
-    extends State<_FullScreenSingleLabelSelectionForm<T>> {
+class __FullScreenMultiLabelFilterSelectionState
+    extends State<_FullScreenMultiLabelFilterSelection> {
   late final TextEditingController _textEditingController;
-
-  final _focusNode = FocusNode();
-
+  late IdQueryParameter _selection;
   @override
   void initState() {
     super.initState();
-    _textEditingController = TextEditingController()
-      ..addListener(() => setState(() {}));
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      _focusNode.requestFocus();
-    });
+    _textEditingController = TextEditingController();
+    _selection = widget.initialValue ?? const UnsetIdQueryParameter();
   }
 
   @override
@@ -183,13 +209,11 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
         title: SizedBox(
           height: kToolbarHeight,
           child: TextFormField(
-            focusNode: _focusNode,
             controller: _textEditingController,
             decoration: InputDecoration(
               contentPadding: EdgeInsets.zero,
               border: const OutlineInputBorder(borderSide: BorderSide.none),
-              hintText:
-                  options[widget.initialValue]?.name ?? widget.searchHintText,
+              hintText: widget.searchHintText,
               suffix: IconButton(
                 padding: EdgeInsets.zero,
                 icon: const Icon(Icons.clear),
@@ -198,6 +222,15 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.done),
+            onPressed: () {
+              context.pop(_selection);
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Builder(
         builder: (context) {
@@ -205,39 +238,44 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
             return Center(
               child: Padding(
                 padding: const EdgeInsets.only(top: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      options.isEmpty
-                          ? widget.emptyOptionsMessage
-                          : widget.emptySearchMessage,
-                    ),
-                    TextButton(
-                      child: Text(widget.addNewLabelText),
-                      onPressed: () async {
-                        final router = GoRouter.of(context);
-                        final selection = await widget.onAddLabel(
-                          context,
-                          _textEditingController.text,
-                        );
-                        if (selection != null) {
-                          router.pop(selection);
-                        }
-                      },
-                    ),
-                  ],
-                ),
+                child: Text(widget.emptySearchMessage),
               ),
             );
           }
           return ListView.builder(
             itemBuilder: (context, index) {
               final option = filteredOptions.elementAt(index);
+              final includeIds = switch (_selection) {
+                SetIdQueryParameter(includeIds: var includeIds) => includeIds,
+                _ => <int>[],
+              };
+              final excludeIds = switch (_selection) {
+                SetIdQueryParameter(excludeIds: var excludeIds) => excludeIds,
+                _ => <int>[],
+              };
               return widget.optionBuilder(
                 context,
                 option,
-                () => context.pop(option.id),
+                () {
+                  if (!includeIds.contains(option.id) &&
+                      !excludeIds.contains(option.id)) {
+                    setState(() {
+                      _selection = SetIdQueryParameter(
+                        includeIds: [...includeIds, option.id!],
+                        excludeIds: excludeIds,
+                      );
+                    });
+                  } else {
+                    setState(() {
+                      _selection = SetIdQueryParameter(
+                        includeIds: includeIds.toggle(option.id!),
+                        excludeIds: excludeIds.toggle(option.id!),
+                      );
+                    });
+                  }
+                },
+                includeIds.contains(option.id),
+                excludeIds.contains(option.id),
               );
             },
             itemCount: filteredOptions.length,

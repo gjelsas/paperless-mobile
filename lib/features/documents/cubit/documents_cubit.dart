@@ -32,7 +32,6 @@ class DocumentsCubit extends Cubit<DocumentsState>
     this._userState,
     this.connectivityStatusService,
   ) : super(DocumentsState(
-          filter: _userState.currentDocumentFilter,
           viewType: _userState.documentsPageViewType,
         )) {
     notifier.addListener(
@@ -104,12 +103,6 @@ class DocumentsCubit extends Cubit<DocumentsState>
     _userState
       ..documentsPageViewType = viewType
       ..save();
-  }
-
-  @override
-  Future<void> onFilterUpdated(DocumentFilter filter) async {
-    _userState.currentDocumentFilter = filter;
-    await _userState.save();
   }
 
   // @override

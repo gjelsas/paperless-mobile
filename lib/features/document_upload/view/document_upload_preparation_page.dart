@@ -12,12 +12,11 @@ import 'package:paperless_mobile/core/database/hive/hive_config.dart';
 import 'package:paperless_mobile/core/database/tables/global_settings.dart';
 import 'package:paperless_mobile/core/database/tables/local_user_account.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
-import 'package:paperless_mobile/core/repository/label_repository.dart';
 import 'package:paperless_mobile/core/widgets/form_builder_fields/form_builder_localized_date_picker.dart';
 import 'package:paperless_mobile/core/widgets/future_or_builder.dart';
 import 'package:paperless_mobile/features/document_upload/cubit/document_upload_cubit.dart';
-import 'package:paperless_mobile/features/labels/tags/view/widgets/tags_form_field.dart';
-import 'package:paperless_mobile/features/labels/view/widgets/label_form_field.dart';
+import 'package:paperless_mobile/features/labels/view/widgets/new/multi_label_selection_form_builder_field.dart';
+import 'package:paperless_mobile/features/labels/view/widgets/new/single_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/features/logging/data/logger.dart';
 import 'package:paperless_mobile/features/sharing/view/widgets/file_thumbnail.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
@@ -39,12 +38,12 @@ class DocumentUploadPreparationPage extends StatefulWidget {
   final String? fileExtension;
 
   const DocumentUploadPreparationPage({
-    Key? key,
+    super.key,
     required this.fileBytes,
     this.title,
     this.filename,
     this.fileExtension,
-  }) : super(key: key);
+  });
 
   @override
   State<DocumentUploadPreparationPage> createState() =>
@@ -59,7 +58,6 @@ class _DocumentUploadPreparationPageState
   final GlobalKey<FormBuilderState> _formKey = GlobalKey();
   Map<String, String> _errors = {};
   late bool _syncTitleAndFilename;
-  bool _showDatePickerDeleteIcon = false;
   final _now = DateTime.now();
 
   @override
@@ -70,7 +68,6 @@ class _DocumentUploadPreparationPageState
 
   @override
   Widget build(BuildContext context) {
-    final labelRepository = context.watch<LabelRepository>();
     return BlocBuilder<DocumentUploadCubit, DocumentUploadState>(
       builder: (context, state) {
         return Scaffold(
@@ -232,61 +229,82 @@ class _DocumentUploadPreparationPageState
                                 .watch<LocalUserAccount>()
                                 .paperlessUser
                                 .canViewCorrespondents)
-                              LabelFormField<Correspondent>(
-                                showAnyAssignedOption: false,
-                                showNotAssignedOption: false,
-                                onAddLabel: (initialName) => CreateLabelRoute(
-                                  LabelType.correspondent,
-                                  name: initialName,
-                                ).push<Correspondent>(context),
-                                addLabelText: S.of(context)!.addCorrespondent,
-                                labelText: S.of(context)!.correspondent + " *",
+                              SingleLabelSelectionFormBuilderField<
+                                  Correspondent>(
                                 name: DocumentModel.correspondentKey,
-                                options: labelRepository.correspondents,
-                                prefixIcon: const Icon(Icons.person_outline),
-                                allowSelectUnassigned: true,
-                                canCreateNewLabel: context
-                                    .watch<LocalUserAccount>()
-                                    .paperlessUser
-                                    .canCreateCorrespondents,
+                                searchHintText: S.of(context)!.startTyping,
+                                emptySearchMessage:
+                                    S.of(context)!.noMatchesFound,
+                                emptyOptionsMessage:
+                                    S.of(context)!.noCorrespondentsSetUp,
+                                labelText: S.of(context)!.correspondent,
+                                enabled: true,
+                                prefixIcon: const Icon(Icons.person_outlined),
+                                onAddLabel: (context, searchText) {
+                                  return CreateLabelRoute(
+                                    LabelType.correspondent,
+                                    name: searchText,
+                                  ).push<int>(context);
+                                },
+                                optionsSelector: (repository) =>
+                                    repository.correspondents,
+                                addNewLabelText:
+                                    S.of(context)!.addNewCorrespondent,
                               ),
+
                             // Document type
                             if (context
                                 .watch<LocalUserAccount>()
                                 .paperlessUser
                                 .canViewDocumentTypes)
-                              LabelFormField<DocumentType>(
-                                showAnyAssignedOption: false,
-                                showNotAssignedOption: false,
-                                onAddLabel: (initialName) => CreateLabelRoute(
-                                  LabelType.documentType,
-                                  name: initialName,
-                                ).push<DocumentType>(context),
-                                addLabelText: S.of(context)!.addDocumentType,
-                                labelText: S.of(context)!.documentType + " *",
+                              SingleLabelSelectionFormBuilderField<
+                                  DocumentType>(
                                 name: DocumentModel.documentTypeKey,
-                                options: labelRepository.documentTypes,
+                                searchHintText: S.of(context)!.startTyping,
+                                emptySearchMessage:
+                                    S.of(context)!.noMatchesFound,
+                                emptyOptionsMessage:
+                                    S.of(context)!.noDocumentTypesSetUp,
+                                labelText: S.of(context)!.documentType,
+                                enabled: true,
                                 prefixIcon:
                                     const Icon(Icons.description_outlined),
-                                allowSelectUnassigned: true,
-                                canCreateNewLabel: context
-                                    .watch<LocalUserAccount>()
-                                    .paperlessUser
-                                    .canCreateDocumentTypes,
+                                onAddLabel: (context, searchText) {
+                                  return CreateLabelRoute(
+                                    LabelType.documentType,
+                                    name: searchText,
+                                  ).push<int>(context);
+                                },
+                                optionsSelector: (repository) =>
+                                    repository.documentTypes,
+                                addNewLabelText:
+                                    S.of(context)!.addNewDocumentType,
                               ),
                             if (context
                                 .watch<LocalUserAccount>()
                                 .paperlessUser
                                 .canViewTags)
-                              TagsFormField(
+                              MultiLabelSelectionFormBuilderField<Tag>(
                                 name: DocumentModel.tagsKey,
-                                allowCreation: true,
-                                allowExclude: false,
-                                allowOnlySelection: true,
-                                options: labelRepository.tags,
+                                searchHintText: S.of(context)!.startTyping,
+                                emptySearchMessage:
+                                    S.of(context)!.noMatchesFound,
+                                emptyOptionsMessage: S.of(context)!.noTagsSetUp,
+                                labelText: S.of(context)!.tags,
+                                enabled: true,
+                                prefixIcon: Icon(Icons.label_outline),
+                                onAddLabel: (context, searchText) {
+                                  return CreateLabelRoute(
+                                    LabelType.tag,
+                                    name: searchText,
+                                  ).push<int>(context);
+                                },
+                                optionsSelector: (repository) =>
+                                    repository.tags,
+                                addNewLabelText: S.of(context)!.addNewTag,
                               ),
                             Text(
-                              "* " + S.of(context)!.uploadInferValuesHint,
+                              "* ${S.of(context)!.uploadInferValuesHint}",
                               style: Theme.of(context).textTheme.bodySmall,
                               textAlign: TextAlign.justify,
                             ).padded(),
@@ -311,27 +329,16 @@ class _DocumentUploadPreparationPageState
       try {
         final formValues = _formKey.currentState!.value;
 
-        final correspondentParam =
-            formValues[DocumentModel.correspondentKey] as IdQueryParameter?;
-        final docTypeParam =
-            formValues[DocumentModel.documentTypeKey] as IdQueryParameter?;
-        final tagsParam = formValues[DocumentModel.tagsKey] as TagsQuery?;
-        final createdAt = formValues[DocumentModel.createdKey] as FormDateTime?;
         final title = formValues[DocumentModel.titleKey] as String;
-        final correspondent = switch (correspondentParam) {
-          SetIdQueryParameter(id: var id) => id,
-          _ => null,
-        };
-        final docType = switch (docTypeParam) {
-          SetIdQueryParameter(id: var id) => id,
-          _ => null,
-        };
-        final tags = switch (tagsParam) {
-          IdsTagsQuery(include: var ids) => ids,
-          _ => const <int>[],
-        };
-
+        final correspondentId =
+            formValues[DocumentModel.correspondentKey] as int?;
+        final documentTypeId =
+            formValues[DocumentModel.documentTypeKey] as int?;
+        final storagePathId = formValues[DocumentModel.storagePathKey] as int?;
+        final tagIds = formValues[DocumentModel.tagsKey] as Iterable<int>?;
+        final created = formValues[DocumentModel.createdKey] as FormDateTime?;
         final asn = formValues[DocumentModel.asnKey] as int?;
+
         final taskId = await cubit.upload(
           await widget.fileBytes,
           filename: _padWithExtension(
@@ -342,10 +349,10 @@ class _DocumentUploadPreparationPageState
               .getValue()!
               .loggedInUserId!,
           title: title,
-          documentType: docType,
-          correspondent: correspondent,
-          tags: tags,
-          createdAt: createdAt?.toDateTime(),
+          documentType: documentTypeId,
+          correspondent: correspondentId,
+          tags: tagIds?.toList() ?? [],
+          createdAt: created?.toDateTime(),
           asn: asn,
         );
         showSnackBar(

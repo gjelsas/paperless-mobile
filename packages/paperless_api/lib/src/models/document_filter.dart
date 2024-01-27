@@ -24,13 +24,13 @@ class DocumentFilter extends Equatable {
   final int page;
 
   @HiveField(2)
-  final IdQueryParameter documentType;
+  final IdQueryParameter documentTypes;
 
   @HiveField(3)
-  final IdQueryParameter correspondent;
+  final IdQueryParameter correspondents;
 
   @HiveField(4)
-  final IdQueryParameter storagePath;
+  final IdQueryParameter storagePaths;
 
   @HiveField(5)
   final IdQueryParameter asnQuery;
@@ -63,9 +63,9 @@ class DocumentFilter extends Equatable {
   final int? selectedView;
 
   const DocumentFilter({
-    this.documentType = const UnsetIdQueryParameter(),
-    this.correspondent = const UnsetIdQueryParameter(),
-    this.storagePath = const UnsetIdQueryParameter(),
+    this.documentTypes = const UnsetIdQueryParameter(),
+    this.correspondents = const UnsetIdQueryParameter(),
+    this.storagePaths = const UnsetIdQueryParameter(),
     this.asnQuery = const UnsetIdQueryParameter(),
     this.tags = const IdsTagsQuery(),
     this.sortField = SortField.created,
@@ -90,9 +90,9 @@ class DocumentFilter extends Equatable {
     List<MapEntry<String, dynamic>> params = [
       MapEntry('page', '$page'),
       MapEntry('page_size', '$pageSize'),
-      ...documentType.toQueryParameter('document_type').entries,
-      ...correspondent.toQueryParameter('correspondent').entries,
-      ...storagePath.toQueryParameter('storage_path').entries,
+      ...documentTypes.toQueryParameter('document_type').entries,
+      ...correspondents.toQueryParameter('correspondent').entries,
+      ...storagePaths.toQueryParameter('storage_path').entries,
       ...asnQuery.toQueryParameter('archive_serial_number').entries,
       ...tags.toQueryParameter().entries,
       ...added.toQueryParameter(DateRangeQueryField.added).entries,
@@ -131,9 +131,9 @@ class DocumentFilter extends Equatable {
   DocumentFilter copyWith({
     int? pageSize,
     int? page,
-    IdQueryParameter? documentType,
-    IdQueryParameter? correspondent,
-    IdQueryParameter? storagePath,
+    IdQueryParameter? documentTypes,
+    IdQueryParameter? correspondents,
+    IdQueryParameter? storagePaths,
     IdQueryParameter? asnQuery,
     TagsQuery? tags,
     SortField? sortField,
@@ -148,9 +148,9 @@ class DocumentFilter extends Equatable {
     final newFilter = DocumentFilter(
       pageSize: pageSize ?? this.pageSize,
       page: page ?? this.page,
-      documentType: documentType ?? this.documentType,
-      correspondent: correspondent ?? this.correspondent,
-      storagePath: storagePath ?? this.storagePath,
+      documentTypes: documentTypes ?? this.documentTypes,
+      correspondents: correspondents ?? this.correspondents,
+      storagePaths: storagePaths ?? this.storagePaths,
       tags: tags ?? this.tags,
       sortField: sortField ?? this.sortField,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -177,9 +177,9 @@ class DocumentFilter extends Equatable {
   /// Checks whether the properties of [document] match the current filter criteria.
   ///
   bool matches(DocumentModel document) {
-    return correspondent.matches(document.correspondent) &&
-        documentType.matches(document.documentType) &&
-        storagePath.matches(document.storagePath) &&
+    return correspondents.matches(document.correspondent) &&
+        documentTypes.matches(document.documentType) &&
+        storagePaths.matches(document.storagePath) &&
         tags.matches(document.tags) &&
         created.matches(document.created) &&
         added.matches(document.added) &&
@@ -192,15 +192,15 @@ class DocumentFilter extends Equatable {
   }
 
   int get appliedFiltersCount => [
-        switch (documentType) {
+        switch (documentTypes) {
           UnsetIdQueryParameter() => 0,
           _ => 1,
         },
-        switch (correspondent) {
+        switch (correspondents) {
           UnsetIdQueryParameter() => 0,
           _ => 1,
         },
-        switch (storagePath) {
+        switch (storagePaths) {
           UnsetIdQueryParameter() => 0,
           _ => 1,
         },
@@ -235,9 +235,9 @@ class DocumentFilter extends Equatable {
   List<Object?> get props => [
         pageSize,
         page,
-        documentType,
-        correspondent,
-        storagePath,
+        documentTypes,
+        correspondents,
+        storagePaths,
         asnQuery,
         tags,
         sortField,

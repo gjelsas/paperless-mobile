@@ -295,7 +295,7 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                                   ),
                                 LoadingStatus.error => _buildErrorState(),
                                 _ => _buildLoadingState(),
-                              }
+                              },
                             ],
                           ),
                           CustomScrollView(

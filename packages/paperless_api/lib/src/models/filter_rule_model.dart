@@ -28,6 +28,19 @@ class FilterRule with EquatableMixin {
   static const int titleAndContentRule = 19;
   static const int extendedRule = 20;
   static const int storagePathRule = 25;
+  static const int hasCorrespondentIn = 26;
+  static const int doesNotHaveCorrespondentIn = 27;
+  static const int hasDocumentTypeIn = 28;
+  static const int doesNotHaveDocumentTypeIn = 29;
+  static const int hasStoragePathIn = 30;
+  static const int doesNotHaveStoragePathIn = 31;
+  static const int ownerIs = 32;
+  static const int hasOwnerIn = 33;
+  static const int doesNotHaveOwner = 34;
+  static const int doesNotHaveOwnerIn = 35;
+  static const int hasCustomFieldValue = 36;
+  static const int isSharedByMe = 37;
+
   // Currently unsupported view options:
   static const int _content = 1;
   static const int _isInInbox = 5;
@@ -56,21 +69,21 @@ class FilterRule with EquatableMixin {
         return filter.copyWith(query: TextQuery.title(value));
       case documentTypeRule:
         return filter.copyWith(
-          documentType: value == null
+          documentTypes: value == null
               ? const NotAssignedIdQueryParameter()
-              : SetIdQueryParameter(id: int.parse(value!)),
+              : SetIdQueryParameter(includeIds: [int.parse(value!)]),
         );
       case correspondentRule:
         return filter.copyWith(
-          correspondent: value == null
+          correspondents: value == null
               ? const NotAssignedIdQueryParameter()
-              : SetIdQueryParameter(id: int.parse(value!)),
+              : SetIdQueryParameter(includeIds: [int.parse(value!)]),
         );
       case storagePathRule:
         return filter.copyWith(
-          storagePath: value == null
+          storagePaths: value == null
               ? const NotAssignedIdQueryParameter()
-              : SetIdQueryParameter(id: int.parse(value!)),
+              : SetIdQueryParameter(includeIds: [int.parse(value!)]),
         );
       case hasAnyTag:
         return filter.copyWith(
@@ -243,9 +256,9 @@ class FilterRule with EquatableMixin {
   ///
   static List<FilterRule> fromFilter(final DocumentFilter filter) {
     List<FilterRule> filterRules = [];
-    final corrRule = switch (filter.correspondent) {
+    final corrRule = switch (filter.correspondents) {
       NotAssignedIdQueryParameter() => FilterRule(correspondentRule, null),
-      SetIdQueryParameter(id: var id) =>
+      SetIdQueryParameter(includeIds: var id) =>
         FilterRule(correspondentRule, id.toString()),
       _ => null,
     };
@@ -253,9 +266,9 @@ class FilterRule with EquatableMixin {
       filterRules.add(corrRule);
     }
 
-    final docTypeRule = switch (filter.documentType) {
+    final docTypeRule = switch (filter.documentTypes) {
       NotAssignedIdQueryParameter() => FilterRule(documentTypeRule, null),
-      SetIdQueryParameter(id: var id) =>
+      SetIdQueryParameter(includeIds: var id) =>
         FilterRule(documentTypeRule, id.toString()),
       _ => null,
     };
@@ -264,9 +277,9 @@ class FilterRule with EquatableMixin {
       filterRules.add(docTypeRule);
     }
 
-    final sPathRule = switch (filter.storagePath) {
+    final sPathRule = switch (filter.storagePaths) {
       NotAssignedIdQueryParameter() => FilterRule(storagePathRule, null),
-      SetIdQueryParameter(id: var id) =>
+      SetIdQueryParameter(includeIds: var id) =>
         FilterRule(storagePathRule, id.toString()),
       _ => null,
     };

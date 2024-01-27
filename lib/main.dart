@@ -46,6 +46,7 @@ import 'package:paperless_mobile/features/login/services/authentication_service.
 import 'package:paperless_mobile/features/notifications/services/local_notification_service.dart';
 import 'package:paperless_mobile/features/settings/view/widgets/global_settings_builder.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
+import 'package:paperless_mobile/routing/extra_codec.dart';
 import 'package:paperless_mobile/routing/navigation_keys.dart';
 import 'package:paperless_mobile/routing/routes/landing_route.dart';
 import 'package:paperless_mobile/routing/routes/shells/authenticated_route.dart';
@@ -294,6 +295,7 @@ class _GoRouterShellState extends State<GoRouterShell> {
   late final _router = GoRouter(
     debugLogDiagnostics: kDebugMode,
     initialLocation: "/login",
+    extraCodec: const ExtraCodec(),
     routes: [
       ShellRoute(
         pageBuilder: (context, state, child) {

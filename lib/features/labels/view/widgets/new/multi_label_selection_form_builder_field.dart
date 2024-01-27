@@ -2,25 +2,27 @@ import 'package:animations/animations.dart';
 import 'package:collection/collection.dart';
 import 'package:diacritic/diacritic.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:go_router/go_router.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/repository/label_repository.dart';
-import 'package:paperless_mobile/features/labels/view/widgets/fullscreen_multi_selection_label_form.dart';
+import 'package:paperless_mobile/features/labels/view/widgets/new/single_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/types.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 
-class SingleLabelSelectionFormBuilderField<T extends Label>
+
+
+class MultiLabelSelectionFormBuilderField<T extends Label>
     extends StatelessWidget {
   /// The form field identifier
   final String name;
-  final int? initialValue;
+  final Iterable<int>? initialValue;
   final LabelRepositorySelector<T> optionsSelector;
-  final LabelOptionBuilder<T> optionBuilder;
-  final String searchHintText;
+  final LabelMultiOptionBuilder<T> optionBuilder;
+  final DisplayOptionBuilder<T> displayOptionBuilder;
   final String labelText;
+  final String searchHintText;
   final String emptySearchMessage;
   final String emptyOptionsMessage;
   final String addNewLabelText;
@@ -28,11 +30,12 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
   final Widget prefixIcon;
   final AddLabelCallback onAddLabel;
 
-  const SingleLabelSelectionFormBuilderField({
+  const MultiLabelSelectionFormBuilderField({
     super.key,
     required this.name,
     this.initialValue,
     this.optionBuilder = _defaultOptionsBuilder,
+    this.displayOptionBuilder = _defaultDisplayOptionBuilder,
     required this.searchHintText,
     required this.emptySearchMessage,
     required this.emptyOptionsMessage,
@@ -48,10 +51,12 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
     BuildContext context,
     Label label,
     VoidCallback onSelected,
+    bool selected,
   ) {
     final documentCountText =
         S.of(context)!.documentsAssigned(label.documentCount ?? 0);
     return ListTile(
+      selected: selected,
       title: Text(label.name),
       trailing: Text(
         documentCountText,
@@ -62,15 +67,23 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
     );
   }
 
+  static Widget _defaultDisplayOptionBuilder(
+    BuildContext context,
+    Label label,
+  ) {
+    return Chip(label: Text(label.name));
+  }
+
   @override
   Widget build(BuildContext context) {
     final repository = context.watch<LabelRepository>();
     final options = optionsSelector(repository);
-    return FormBuilderField<int>(
+    return FormBuilderField<Iterable<int>>(
       name: name,
       initialValue: initialValue,
       builder: (field) {
-        return OpenContainer<int>(
+        final isEmpty = field.value?.isEmpty ?? true;
+        return OpenContainer<Iterable<int>>(
           middleColor: Theme.of(context).colorScheme.background,
           closedColor: Theme.of(context).colorScheme.background,
           openColor: Theme.of(context).colorScheme.background,
@@ -80,22 +93,34 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
           tappable: enabled,
           closedBuilder: (context, openForm) => Container(
             margin: const EdgeInsets.only(top: 6),
-            child: TextField(
-              controller: TextEditingController(
-                text: options[field.value]?.name,
-              ),
-              onTap: openForm,
-              readOnly: true,
-              enabled: enabled,
+            child: InputDecorator(
+              isEmpty: isEmpty,
               decoration: InputDecoration(
-                hintText: options[field.value]?.name ?? labelText,
+                labelText: labelText,
+                contentPadding: const EdgeInsets.all(12),
                 prefixIcon: prefixIcon,
-                suffixIcon: field.value != null
+                enabled: enabled,
+                suffixIcon: field.value?.isNotEmpty ?? false
                     ? IconButton(
                         icon: const Icon(Icons.clear),
-                        onPressed: () => field.didChange(null),
+                        onPressed: () {
+                          field.didChange(null);
+                        },
                       )
                     : null,
+              ),
+              child: SizedBox(
+                height: 32,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 4),
+                  itemBuilder: (context, index) => displayOptionBuilder(
+                    context,
+                    options[field.value!.elementAt(index)]!,
+                  ),
+                  itemCount: field.value?.length ?? 0,
+                ),
               ),
             ),
           ),
@@ -124,9 +149,9 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
 
 class _FullScreenSingleLabelSelectionForm<T extends Label>
     extends StatefulWidget {
-  final int? initialValue;
+  final Iterable<int>? initialValue;
   final LabelRepositorySelector<T> optionSelector;
-  final LabelOptionBuilder<T> optionBuilder;
+  final LabelMultiOptionBuilder<T> optionBuilder;
   final String searchHintText;
   final String emptySearchMessage;
   final String emptyOptionsMessage;
@@ -153,16 +178,14 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
     extends State<_FullScreenSingleLabelSelectionForm<T>> {
   late final TextEditingController _textEditingController;
 
-  final _focusNode = FocusNode();
+  late List<int> _selectedOptions;
 
   @override
   void initState() {
     super.initState();
+    _selectedOptions = widget.initialValue?.toList() ?? [];
     _textEditingController = TextEditingController()
       ..addListener(() => setState(() {}));
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      _focusNode.requestFocus();
-    });
   }
 
   @override
@@ -183,13 +206,11 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
         title: SizedBox(
           height: kToolbarHeight,
           child: TextFormField(
-            focusNode: _focusNode,
             controller: _textEditingController,
             decoration: InputDecoration(
               contentPadding: EdgeInsets.zero,
               border: const OutlineInputBorder(borderSide: BorderSide.none),
-              hintText:
-                  options[widget.initialValue]?.name ?? widget.searchHintText,
+              hintText: widget.searchHintText,
               suffix: IconButton(
                 padding: EdgeInsets.zero,
                 icon: const Icon(Icons.clear),
@@ -198,6 +219,15 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.done),
+            onPressed: () {
+              context.pop(_selectedOptions);
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Builder(
         builder: (context) {
@@ -208,11 +238,7 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      options.isEmpty
-                          ? widget.emptyOptionsMessage
-                          : widget.emptySearchMessage,
-                    ),
+                    Text(widget.emptySearchMessage),
                     TextButton(
                       child: Text(widget.addNewLabelText),
                       onPressed: () async {
@@ -234,10 +260,18 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
           return ListView.builder(
             itemBuilder: (context, index) {
               final option = filteredOptions.elementAt(index);
+              final isSelected = _selectedOptions.contains(option.id);
               return widget.optionBuilder(
                 context,
                 option,
-                () => context.pop(option.id),
+                () => setState(() {
+                  if (isSelected) {
+                    _selectedOptions.remove(option.id);
+                  } else {
+                    _selectedOptions.add(option.id!);
+                  }
+                }),
+                isSelected,
               );
             },
             itemCount: filteredOptions.length,

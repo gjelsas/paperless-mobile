@@ -8,6 +8,7 @@ import 'package:paperless_mobile/core/bloc/connectivity_cubit.dart';
 import 'package:paperless_mobile/core/database/tables/local_user_account.dart';
 import 'package:paperless_mobile/core/extensions/document_extensions.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
+import 'package:paperless_mobile/core/util/list_utils.dart';
 import 'package:paperless_mobile/features/app_drawer/view/app_drawer.dart';
 import 'package:paperless_mobile/features/document_search/view/sliver_search_bar.dart';
 import 'package:paperless_mobile/features/documents/cubit/documents_cubit.dart';
@@ -570,24 +571,22 @@ class _DocumentsPageState extends State<DocumentsPage> {
     final cubit = context.read<DocumentsCubit>();
 
     try {
-      switch (cubit.state.filter.correspondent) {
-        case SetIdQueryParameter(id: var id):
-          if (id == correspondentId) {
-            cubit.updateCurrentFilter(
-              (filter) =>
-                  filter.copyWith(correspondent: const UnsetIdQueryParameter()),
-            );
-          } else {
-            cubit.updateCurrentFilter(
-              (filter) => filter.copyWith(
-                  correspondent: SetIdQueryParameter(id: correspondentId)),
-            );
-          }
+      switch (cubit.state.filter.correspondents) {
+        case SetIdQueryParameter(includeIds: var includeIds):
+          cubit.updateCurrentFilter(
+            (filter) => filter.copyWith(
+              correspondents: SetIdQueryParameter(
+                  includeIds: includeIds.toggle(correspondentId)),
+            ),
+          );
           break;
         default:
-          cubit.updateCurrentFilter((filter) => filter.copyWith(
-                correspondent: SetIdQueryParameter(id: correspondentId),
-              ));
+          cubit.updateCurrentFilter(
+            (filter) => filter.copyWith(
+              correspondents:
+                  SetIdQueryParameter(includeIds: [correspondentId]),
+            ),
+          );
           break;
       }
     } on PaperlessApiException catch (error, stackTrace) {
@@ -600,24 +599,20 @@ class _DocumentsPageState extends State<DocumentsPage> {
     final cubit = context.read<DocumentsCubit>();
 
     try {
-      switch (cubit.state.filter.documentType) {
-        case SetIdQueryParameter(id: var id):
-          if (id == documentTypeId) {
-            cubit.updateCurrentFilter(
-              (filter) =>
-                  filter.copyWith(documentType: const UnsetIdQueryParameter()),
-            );
-          } else {
-            cubit.updateCurrentFilter(
-              (filter) => filter.copyWith(
-                  documentType: SetIdQueryParameter(id: documentTypeId)),
-            );
-          }
+      switch (cubit.state.filter.documentTypes) {
+        case SetIdQueryParameter(includeIds: var includeIds):
+          cubit.updateCurrentFilter(
+            (filter) => filter.copyWith(
+              documentTypes: SetIdQueryParameter(
+                  includeIds: includeIds.toggle(documentTypeId)),
+            ),
+          );
           break;
         default:
           cubit.updateCurrentFilter(
             (filter) => filter.copyWith(
-                documentType: SetIdQueryParameter(id: documentTypeId)),
+              documentTypes: SetIdQueryParameter(includeIds: [documentTypeId]),
+            ),
           );
           break;
       }
@@ -631,24 +626,20 @@ class _DocumentsPageState extends State<DocumentsPage> {
     final cubit = context.read<DocumentsCubit>();
 
     try {
-      switch (cubit.state.filter.storagePath) {
-        case SetIdQueryParameter(id: var id):
-          if (id == pathId) {
-            cubit.updateCurrentFilter(
-              (filter) =>
-                  filter.copyWith(storagePath: const UnsetIdQueryParameter()),
-            );
-          } else {
-            cubit.updateCurrentFilter(
-              (filter) =>
-                  filter.copyWith(storagePath: SetIdQueryParameter(id: pathId)),
-            );
-          }
+      switch (cubit.state.filter.storagePaths) {
+        case SetIdQueryParameter(includeIds: var includeIds):
+          cubit.updateCurrentFilter(
+            (filter) => filter.copyWith(
+              storagePaths:
+                  SetIdQueryParameter(includeIds: includeIds.toggle(pathId)),
+            ),
+          );
           break;
         default:
           cubit.updateCurrentFilter(
-            (filter) =>
-                filter.copyWith(storagePath: SetIdQueryParameter(id: pathId)),
+            (filter) => filter.copyWith(
+              storagePaths: SetIdQueryParameter(includeIds: [pathId]),
+            ),
           );
           break;
       }

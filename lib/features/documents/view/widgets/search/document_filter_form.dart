@@ -7,7 +7,7 @@ import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
 import 'package:paperless_mobile/core/repository/label_repository.dart';
 import 'package:paperless_mobile/core/widgets/form_builder_fields/extended_date_range_form_field/form_builder_extended_date_range_picker.dart';
 import 'package:paperless_mobile/features/labels/tags/view/widgets/tags_form_field.dart';
-import 'package:paperless_mobile/features/labels/view/widgets/label_form_field.dart';
+import 'package:paperless_mobile/features/labels/view/widgets/new/multi_label_filter_selection_form_builder_field.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 
 import 'text_query_form_field.dart';
@@ -27,13 +27,14 @@ class DocumentFilterForm extends StatefulWidget {
     formKey.currentState?.save();
     final v = formKey.currentState!.value;
     return initialFilter.copyWith(
-      correspondent:
+      correspondents:
           v[DocumentFilterForm.fkCorrespondent] as IdQueryParameter? ??
-              DocumentFilter.initial.correspondent,
-      documentType: v[DocumentFilterForm.fkDocumentType] as IdQueryParameter? ??
-          DocumentFilter.initial.documentType,
-      storagePath: v[DocumentFilterForm.fkStoragePath] as IdQueryParameter? ??
-          DocumentFilter.initial.storagePath,
+              DocumentFilter.initial.correspondents,
+      documentTypes:
+          v[DocumentFilterForm.fkDocumentType] as IdQueryParameter? ??
+              DocumentFilter.initial.documentTypes,
+      storagePaths: v[DocumentFilterForm.fkStoragePath] as IdQueryParameter? ??
+          DocumentFilter.initial.storagePaths,
       tags:
           v[DocumentModel.tagsKey] as TagsQuery? ?? DocumentFilter.initial.tags,
       query: v[DocumentFilterForm.fkQuery] as TextQuery? ??
@@ -159,45 +160,41 @@ class _DocumentFilterFormState extends State<DocumentFilterForm> {
   }
 
   Widget _buildDocumentTypeFormField(Map<int, DocumentType> documentTypes) {
-    return LabelFormField<DocumentType>(
+    return MultiLabelFilterSelectionFormBuilderField(
       name: DocumentFilterForm.fkDocumentType,
-      options: documentTypes,
-      labelText: S.of(context)!.documentType,
-      initialValue: widget.initialFilter.documentType,
+      searchHintText: S.of(context)!.startTyping,
+      emptySearchMessage: S.of(context)!.noItemsFound,
+      emptyOptionsMessage: S.of(context)!.noDocumentTypesSetUp,
+      enabled: true,
       prefixIcon: const Icon(Icons.description_outlined),
-      allowSelectUnassigned: false,
-      canCreateNewLabel: context
-          .watch<LocalUserAccount>()
-          .paperlessUser
-          .canCreateDocumentTypes,
+      labelText: S.of(context)!.documentTypes,
+      optionsSelector: (repository) => repository.documentTypes,
     );
   }
 
   Widget _buildCorrespondentFormField(Map<int, Correspondent> correspondents) {
-    return LabelFormField<Correspondent>(
+    return MultiLabelFilterSelectionFormBuilderField(
       name: DocumentFilterForm.fkCorrespondent,
-      options: correspondents,
-      labelText: S.of(context)!.correspondent,
-      initialValue: widget.initialFilter.correspondent,
+      searchHintText: S.of(context)!.startTyping,
+      emptySearchMessage: S.of(context)!.noItemsFound,
+      emptyOptionsMessage: S.of(context)!.noCorrespondentsSetUp,
+      enabled: true,
       prefixIcon: const Icon(Icons.person_outline),
-      allowSelectUnassigned: false,
-      canCreateNewLabel: context
-          .watch<LocalUserAccount>()
-          .paperlessUser
-          .canCreateCorrespondents,
+      labelText: S.of(context)!.correspondents,
+      optionsSelector: (repository) => repository.correspondents,
     );
   }
 
   Widget _buildStoragePathFormField(Map<int, StoragePath> storagePaths) {
-    return LabelFormField<StoragePath>(
+    return MultiLabelFilterSelectionFormBuilderField(
       name: DocumentFilterForm.fkStoragePath,
-      options: storagePaths,
-      labelText: S.of(context)!.storagePath,
-      initialValue: widget.initialFilter.storagePath,
+      searchHintText: S.of(context)!.startTyping,
+      emptySearchMessage: S.of(context)!.noItemsFound,
+      emptyOptionsMessage: S.of(context)!.noStoragePathsSetUp,
+      enabled: true,
       prefixIcon: const Icon(Icons.folder_outlined),
-      allowSelectUnassigned: false,
-      canCreateNewLabel:
-          context.watch<LocalUserAccount>().paperlessUser.canCreateStoragePaths,
+      labelText: S.of(context)!.storagePaths,
+      optionsSelector: (repository) => repository.storagePaths,
     );
   }
 
@@ -210,13 +207,17 @@ class _DocumentFilterFormState extends State<DocumentFilterForm> {
   }
 
   Widget _buildTagsFormField(Map<int, Tag> tags) {
-    return TagsFormField(
+    return MultiLabelFilterSelectionFormBuilderField(
       name: DocumentModel.tagsKey,
       initialValue: widget.initialFilter.tags,
-      options: tags,
-      allowExclude: false,
-      allowOnlySelection: false,
-      allowCreation: false,
+      searchHintText: S.of(context)!.startTyping,
+      emptySearchMessage: S.of(context)!.noItemsFound,
+      emptyOptionsMessage: S.of(context)!.noTagsSetUp,
+      enabled: true,
+      prefixIcon: const Icon(Icons.label_outline),
+      labelText: S.of(context)!.tags,
+      optionsSelector: (repository) => repository.tags,
     );
+
   }
 }

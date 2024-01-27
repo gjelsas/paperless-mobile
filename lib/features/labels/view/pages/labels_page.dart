@@ -262,7 +262,7 @@ class _LabelsPageState extends State<LabelsPage>
             LabelTabView<Correspondent>(
               labels: state.correspondents,
               filterBuilder: (label) => DocumentFilter(
-                correspondent: SetIdQueryParameter(id: label.id!),
+                correspondents: SetIdQueryParameter(includeIds: [label.id!]),
               ),
               canEdit: user.canEditCorrespondents,
               canAddNew: user.canCreateCorrespondents,
@@ -290,7 +290,7 @@ class _LabelsPageState extends State<LabelsPage>
             LabelTabView<DocumentType>(
               labels: state.documentTypes,
               filterBuilder: (label) => DocumentFilter(
-                documentType: SetIdQueryParameter(id: label.id!),
+                documentTypes: SetIdQueryParameter(includeIds: [label.id!]),
               ),
               canEdit: user.canEditDocumentTypes,
               canAddNew: user.canCreateDocumentTypes,
@@ -357,7 +357,7 @@ class _LabelsPageState extends State<LabelsPage>
                 EditLabelRoute(label).push(context);
               },
               filterBuilder: (label) => DocumentFilter(
-                storagePath: SetIdQueryParameter(id: label.id!),
+                storagePaths: SetIdQueryParameter(includeIds: [label.id!]),
               ),
               canEdit: user.canEditStoragePaths,
               canAddNew: user.canCreateStoragePaths,

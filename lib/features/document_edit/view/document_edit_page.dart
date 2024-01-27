@@ -1,10 +1,8 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:paperless_api/paperless_api.dart';
@@ -16,8 +14,7 @@ import 'package:paperless_mobile/core/widgets/form_builder_fields/form_builder_l
 import 'package:paperless_mobile/core/workarounds/colored_chip.dart';
 import 'package:paperless_mobile/features/document_edit/cubit/document_edit_cubit.dart';
 import 'package:paperless_mobile/features/documents/view/pages/document_view.dart';
-import 'package:paperless_mobile/features/labels/tags/view/widgets/tags_form_field.dart';
-import 'package:paperless_mobile/features/labels/view/widgets/label_form_field.dart';
+import 'package:paperless_mobile/features/labels/view/widgets/new/multi_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/single_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/helpers/message_helpers.dart';
@@ -74,25 +71,13 @@ class _DocumentEditPageState extends State<DocumentEditPage>
             if (fkState == null) {
               return false;
             }
-            final doc = state.document;
-            final (
-              title,
-              correspondent,
-              documentType,
-              storagePath,
-              tags,
-              createdAt,
-              content
-            ) = _currentValues;
+            fkState.save();
+            final document = state.document;
+            final updatedDocument = _assembleUpdatedDocumentModel(document);
+
             final isContentTouched =
                 _formKey.currentState?.fields[fkContent]?.isDirty ?? false;
-            return doc.title != title ||
-                doc.correspondent != correspondent ||
-                doc.documentType != documentType ||
-                doc.storagePath != storagePath ||
-                !const UnorderedIterableEquality().equals(doc.tags, tags) ||
-                doc.created != createdAt ||
-                (doc.content != content && isContentTouched);
+            return document != updatedDocument && isContentTouched;
           },
           child: FormBuilder(
             key: _formKey,
@@ -208,111 +193,94 @@ class _DocumentEditPageState extends State<DocumentEditPage>
               ).padded(),
               // Correspondent form field
               if (currentUser.canViewCorrespondents)
-                Column(
-                  children: [
-                    SingleLabelSelectionFormBuilderField<Correspondent>(
-                      name: fkCorrespondent,
-                      initialValue: state.document.correspondent,
-                      searchHintText: S.of(context)!.startTyping,
-                      emptySearchMessage: S.of(context)!.noMatchesFound,
-                      emptyOptionsMessage: S.of(context)!.noCorrespondentsSetUp,
-                      enabled: true,
-                      prefixIcon: Icon(Icons.person_outlined),
-                      onAddLabel: (context, searchText) {
-                        return CreateLabelRoute(
-                          LabelType.correspondent,
-                          name: searchText,
-                        ).push<int>(context);
-                      },
-                      optionsSelector: (repository) =>
-                          repository.correspondents,
-                      addNewLabelText: S.of(context)!.addNewCorrespondent,
-                    ),
-                    // LabelFormField<Correspondent>(
-                    //   showAnyAssignedOption: false,
-                    //   showNotAssignedOption: false,
-                    //   onAddLabel: (currentInput) => CreateLabelRoute(
-                    //     LabelType.correspondent,
-                    //     name: currentInput,
-                    //   ).push<Correspondent>(context),
-                    //   addLabelText: S.of(context)!.addCorrespondent,
-                    //   labelText: S.of(context)!.correspondent,
-                    //   options: labelRepository.correspondents,
-                    //   initialValue: state.document.correspondent != null
-                    //       ? SetIdQueryParameter(
-                    //           id: state.document.correspondent!)
-                    //       : const UnsetIdQueryParameter(),
-                    //   name: fkCorrespondent,
-                    //   prefixIcon: const Icon(Icons.person_outlined),
-                    //   allowSelectUnassigned: true,
-                    //   canCreateNewLabel: currentUser.canCreateCorrespondents,
-                    //   suggestions: filteredSuggestions?.correspondents ?? [],
-                    // ),
-                  ],
+                SingleLabelSelectionFormBuilderField<Correspondent>(
+                  name: fkCorrespondent,
+                  initialValue: state.document.correspondent,
+                  searchHintText: S.of(context)!.startTyping,
+                  emptySearchMessage: S.of(context)!.noMatchesFound,
+                  emptyOptionsMessage: S.of(context)!.noCorrespondentsSetUp,
+                  labelText: S.of(context)!.correspondent,
+                  enabled: true,
+                  prefixIcon: const Icon(Icons.person_outlined),
+                  onAddLabel: (context, searchText) {
+                    return CreateLabelRoute(
+                      LabelType.correspondent,
+                      name: searchText,
+                    ).push<int>(context);
+                  },
+                  optionsSelector: (repository) => repository.correspondents,
+                  addNewLabelText: S.of(context)!.addNewCorrespondent,
                 ).padded(),
               // DocumentType form field
               if (currentUser.canViewDocumentTypes)
-                Column(
-                  children: [
-                    LabelFormField<DocumentType>(
-                      showAnyAssignedOption: false,
-                      showNotAssignedOption: false,
-                      onAddLabel: (currentInput) => CreateLabelRoute(
-                        LabelType.documentType,
-                        name: currentInput,
-                      ).push<DocumentType>(context),
-                      canCreateNewLabel: currentUser.canCreateDocumentTypes,
-                      addLabelText: S.of(context)!.addDocumentType,
-                      labelText: S.of(context)!.documentType,
-                      initialValue: state.document.documentType != null
-                          ? SetIdQueryParameter(
-                              id: state.document.documentType!)
-                          : const UnsetIdQueryParameter(),
-                      options: labelRepository.documentTypes,
-                      name: _DocumentEditPageState.fkDocumentType,
-                      prefixIcon: const Icon(Icons.description_outlined),
-                      allowSelectUnassigned: true,
-                      suggestions: filteredSuggestions?.documentTypes ?? [],
-                    ),
-                  ],
+                SingleLabelSelectionFormBuilderField<DocumentType>(
+                  name: fkDocumentType,
+                  initialValue: state.document.documentType,
+                  searchHintText: S.of(context)!.startTyping,
+                  emptySearchMessage: S.of(context)!.noMatchesFound,
+                  emptyOptionsMessage: S.of(context)!.noDocumentTypesSetUp,
+                  labelText: S.of(context)!.documentType,
+                  enabled: true,
+                  prefixIcon: const Icon(Icons.description_outlined),
+                  onAddLabel: (context, searchText) {
+                    return CreateLabelRoute(
+                      LabelType.documentType,
+                      name: searchText,
+                    ).push<int>(context);
+                  },
+                  optionsSelector: (repository) => repository.documentTypes,
+                  addNewLabelText: S.of(context)!.addNewDocumentType,
                 ).padded(),
               // StoragePath form field
               if (currentUser.canViewStoragePaths)
-                Column(
-                  children: [
-                    LabelFormField<StoragePath>(
-                      showAnyAssignedOption: false,
-                      showNotAssignedOption: false,
-                      onAddLabel: (currentInput) => CreateLabelRoute(
-                        LabelType.storagePath,
-                        name: currentInput,
-                      ).push<StoragePath>(context),
-                      canCreateNewLabel: currentUser.canCreateStoragePaths,
-                      addLabelText: S.of(context)!.addStoragePath,
-                      labelText: S.of(context)!.storagePath,
-                      options: labelRepository.storagePaths,
-                      initialValue: state.document.storagePath != null
-                          ? SetIdQueryParameter(id: state.document.storagePath!)
-                          : const UnsetIdQueryParameter(),
-                      name: fkStoragePath,
-                      prefixIcon: const Icon(Icons.folder_outlined),
-                      allowSelectUnassigned: true,
-                    ),
-                  ],
+                SingleLabelSelectionFormBuilderField<StoragePath>(
+                  name: fkStoragePath,
+                  initialValue: state.document.storagePath,
+                  searchHintText: S.of(context)!.startTyping,
+                  emptySearchMessage: S.of(context)!.noMatchesFound,
+                  emptyOptionsMessage: S.of(context)!.noStoragePathsSetUp,
+                  labelText: S.of(context)!.storagePath,
+                  enabled: true,
+                  prefixIcon: const Icon(Icons.folder_outlined),
+                  onAddLabel: (context, searchText) {
+                    return CreateLabelRoute(
+                      LabelType.storagePath,
+                      name: searchText,
+                    ).push<int>(context);
+                  },
+                  optionsSelector: (repository) => repository.storagePaths,
+                  addNewLabelText: S.of(context)!.addNewStoragePath,
                 ).padded(),
               // Tag form field
               if (currentUser.canViewTags)
-                TagsFormField(
-                  options: labelRepository.tags,
+                MultiLabelSelectionFormBuilderField<Tag>(
                   name: fkTags,
-                  allowOnlySelection: true,
-                  allowCreation: true,
-                  allowExclude: false,
-                  suggestions: filteredSuggestions?.tags ?? [],
-                  initialValue: IdsTagsQuery(
-                    include: state.document.tags.toList(),
-                  ),
+                  searchHintText: S.of(context)!.startTyping,
+                  emptySearchMessage: S.of(context)!.noMatchesFound,
+                  emptyOptionsMessage: S.of(context)!.noTagsSetUp,
+                  labelText: S.of(context)!.tags,
+                  enabled: true,
+                  prefixIcon: Icon(Icons.label_outline),
+                  onAddLabel: (context, searchText) {
+                    return CreateLabelRoute(
+                      LabelType.tag,
+                      name: searchText,
+                    ).push<int>(context);
+                  },
+                  optionsSelector: (repository) => repository.tags,
+                  addNewLabelText: S.of(context)!.addNewTag,
                 ).padded(),
+              // TagsFormField(
+              //   options: labelRepository.tags,
+              //   name: fkTags,
+              //   allowOnlySelection: true,
+              //   allowCreation: true,
+              //   allowExclude: false,
+              //   suggestions: filteredSuggestions?.tags ?? [],
+              //   initialValue: IdsTagsQuery(
+              //     include: state.document.tags.toList(),
+              //   ),
+              // ).padded(),
 
               const SizedBox(height: 140),
             ],
@@ -338,71 +306,31 @@ class _DocumentEditPageState extends State<DocumentEditPage>
     );
   }
 
-  (
-    String? title,
-    int? correspondent,
-    int? documentType,
-    int? storagePath,
-    List<int>? tags,
-    DateTime? createdAt,
-    String? content,
-  ) get _currentValues {
+  DocumentModel _assembleUpdatedDocumentModel(DocumentModel document) {
     final fkState = _formKey.currentState!;
 
-    final correspondent = fkState.getRawValue<Correspondent?>(fkCorrespondent);
-    final documentTypeParam =
-        fkState.getRawValue<IdQueryParameter?>(fkDocumentType);
-    final storagePathParam =
-        fkState.getRawValue<IdQueryParameter?>(fkStoragePath);
-    final tagsParam = fkState.getRawValue<TagsQuery?>(fkTags);
-    final title = fkState.getRawValue<String?>(fkTitle);
-    final created = fkState.getRawValue<FormDateTime?>(fkCreatedDate);
-    final documentType = switch (documentTypeParam) {
-      SetIdQueryParameter(id: var id) => id,
-      _ => null,
-    };
-    final storagePath = switch (storagePathParam) {
-      SetIdQueryParameter(id: var id) => id,
-      _ => null,
-    };
-    final tags = switch (tagsParam) {
-      IdsTagsQuery(include: var i) => i,
-      _ => null,
-    };
-    final content = fkState.getRawValue<String?>(fkContent);
+    final correspondentId = fkState.value[fkCorrespondent] as int?;
+    final documentTypeId = fkState.value[fkDocumentType] as int?;
+    final storagePathId = fkState.value[fkStoragePath] as int?;
+    final tagIds = fkState.value[fkTags] as Iterable<int>?;
+    final title = fkState.value[fkTitle] as String?;
+    final created = fkState.value[fkCreatedDate] as FormDateTime?;
+    final content = fkState.value[fkContent] as String?;
 
-    return (
-      title,
-      correspondent?.id,
-      documentType,
-      storagePath,
-      tags,
-      created?.toDateTime(),
-      content
+    return document.copyWith(
+      title: title,
+      created: created?.toDateTime(),
+      correspondent: () => correspondentId,
+      documentType: () => documentTypeId,
+      storagePath: () => storagePathId,
+      tags: tagIds?.toList() ?? [],
+      content: content,
     );
   }
 
   Future<void> _onSubmit(DocumentModel document) async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
-      final (
-        title,
-        correspondent,
-        documentType,
-        storagePath,
-        tags,
-        createdAt,
-        content
-      ) = _currentValues;
-      var mergedDocument = document.copyWith(
-        title: title,
-        created: createdAt,
-        correspondent: () => correspondent,
-        documentType: () => documentType,
-        storagePath: () => storagePath,
-        tags: tags,
-        content: content,
-      );
-
+      final mergedDocument = _assembleUpdatedDocumentModel(document);
       try {
         await context.read<DocumentEditCubit>().updateDocument(mergedDocument);
         showSnackBar(context, S.of(context)!.documentSuccessfullyUpdated);

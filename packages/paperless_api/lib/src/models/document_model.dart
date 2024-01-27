@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -132,7 +133,7 @@ class DocumentModel extends Equatable {
         content,
         correspondent,
         documentType,
-        tags,
+        tags.sorted((a, b) => a.compareTo(b)),
         storagePath,
         created,
         modified,

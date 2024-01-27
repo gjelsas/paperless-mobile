@@ -17,7 +17,7 @@ mixin DocumentPagingBlocMixin<State extends DocumentPagingState>
   PaperlessDocumentsApi get api;
   DocumentChangedNotifier get notifier;
 
-  Future<void> onFilterUpdated(DocumentFilter filter);
+  Future<void> onFilterUpdated(DocumentFilter filter) async {}
 
   Future<void> loadMore() async {
     final hasConnection =

@@ -179,7 +179,7 @@ class _LabelFormState<T extends Label> extends State<LabelForm<T>> {
         final router = GoRouter.of(context);
         final parsed = widget.fromJsonT(mergedJson);
         final createdLabel = await widget.submitButtonConfig.onSubmit(parsed);
-        router.pop(createdLabel);
+        router.pop(createdLabel.id);
       } on PaperlessApiException catch (error, stackTrace) {
         showErrorMessage(context, error, stackTrace);
       } on PaperlessFormValidationException catch (exception) {
