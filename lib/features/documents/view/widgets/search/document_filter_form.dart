@@ -207,17 +207,12 @@ class _DocumentFilterFormState extends State<DocumentFilterForm> {
   }
 
   Widget _buildTagsFormField(Map<int, Tag> tags) {
-    return MultiLabelFilterSelectionFormBuilderField(
+    return TagsFormField(
+      options: tags,
       name: DocumentModel.tagsKey,
-      initialValue: widget.initialFilter.tags,
-      searchHintText: S.of(context)!.startTyping,
-      emptySearchMessage: S.of(context)!.noItemsFound,
-      emptyOptionsMessage: S.of(context)!.noTagsSetUp,
-      enabled: true,
-      prefixIcon: const Icon(Icons.label_outline),
-      labelText: S.of(context)!.tags,
-      optionsSelector: (repository) => repository.tags,
+      allowOnlySelection: false,
+      allowCreation: false,
+      allowExclude: true,
     );
-
   }
 }

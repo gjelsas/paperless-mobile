@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:open_filex/open_filex.dart';
@@ -14,6 +15,7 @@ import 'package:paperless_mobile/core/widgets/material/colored_tab_bar.dart';
 import 'package:paperless_mobile/features/document_details/cubit/document_details_cubit.dart';
 import 'package:paperless_mobile/features/document_details/view/widgets/document_content_widget.dart';
 import 'package:paperless_mobile/features/document_details/view/widgets/document_download_button.dart';
+import 'package:paperless_mobile/features/document_details/view/widgets/document_edit_form_widget.dart';
 import 'package:paperless_mobile/features/document_details/view/widgets/document_meta_data_widget.dart';
 import 'package:paperless_mobile/features/document_details/view/widgets/document_notes_widget.dart';
 import 'package:paperless_mobile/features/document_details/view/widgets/document_overview_widget.dart';
@@ -54,12 +56,12 @@ class DocumentDetailsPage extends StatefulWidget {
 
 class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
   static const double _itemSpacing = 24;
-
+  final _formKey = GlobalKey<FormBuilderState>();
   final _pagingScrollController = ScrollController();
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    initializeDateFormatting(Localizations.localeOf(context).toString());
+    initializeDateFormatting();
   }
 
   @override
@@ -68,292 +70,78 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
     debugPrint(disableAnimations.toString());
     final hasMultiUserSupport =
         context.watch<LocalUserAccount>().hasMultiUserSupport;
-    final tabLength = 5 + (hasMultiUserSupport ? 1 : 0);
-    return AnnotatedRegion(
-      value: buildOverlayStyle(
-        Theme.of(context),
-        systemNavigationBarColor: Theme.of(context).bottomAppBarTheme.color,
+    final tabLength = 2; //5 + (hasMultiUserSupport ? 1 : 0);
+
+    return SafeArea(
+      child: Scaffold(
+        body: DefaultTabController(
+          length: tabLength,
+          child: CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                child: TabBarView(
+                  children: [
+                    Placeholder(),
+                    Placeholder(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: BlocBuilder<DocumentDetailsCubit, DocumentDetailsState>(
-        builder: (context, state) {
-          return DefaultTabController(
-            length: tabLength,
-            child: Scaffold(
-              extendBodyBehindAppBar: false,
-              floatingActionButtonLocation:
-                  FloatingActionButtonLocation.endDocked,
-              floatingActionButton: switch (state.status) {
-                LoadingStatus.loaded => _buildEditButton(state.document!),
-                _ => null
-              },
-              bottomNavigationBar: _buildBottomAppBar(),
-              body: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  SliverOverlapAbsorber(
-                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                        context),
-                    sliver:
-                        BlocBuilder<DocumentDetailsCubit, DocumentDetailsState>(
-                      builder: (context, state) {
-                        final title = switch (state.status) {
-                          LoadingStatus.loaded => state.document!.title,
-                          _ => widget.title ?? '',
-                        };
-                        return SliverAppBar(
-                          title: Text(title),
-                          leading: const BackButton(),
-                          pinned: true,
-                          forceElevated: innerBoxIsScrolled,
-                          collapsedHeight: kToolbarHeight,
-                          expandedHeight: 250.0,
-                          flexibleSpace: FlexibleSpaceBar(
-                            background: Builder(
-                              builder: (context) {
-                                return Hero(
-                                  tag: widget.heroTag ?? "thumb_${widget.id}",
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      DocumentPreviewRoute(
-                                        id: widget.id,
-                                        title: title,
-                                      ).push(context);
-                                    },
-                                    child: Stack(
-                                      alignment: Alignment.topCenter,
-                                      children: [
-                                        Positioned.fill(
-                                          child: DocumentPreview(
-                                            documentId: widget.id,
-                                            title: title,
-                                            enableHero: false,
-                                            fit: BoxFit.cover,
-                                            alignment: Alignment.topCenter,
-                                          ),
-                                        ),
-                                        Positioned.fill(
-                                          child: DecoratedBox(
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                stops: [0.2, 0.4],
-                                                colors: [
-                                                  Theme.of(context)
-                                                      .colorScheme
-                                                      .background
-                                                      .withOpacity(0.6),
-                                                  Theme.of(context)
-                                                      .colorScheme
-                                                      .background
-                                                      .withOpacity(0.3),
-                                                ],
-                                                begin: Alignment.topCenter,
-                                                end: Alignment.bottomCenter,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ).accessible();
-                              },
-                            ),
-                          ),
-                          bottom: ColoredTabBar(
-                            tabBar: TabBar(
-                              isScrollable: true,
-                              tabAlignment: TabAlignment.start,
-                              tabs: [
-                                Tab(
-                                  child: Text(
-                                    S.of(context)!.overview,
-                                    style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer,
-                                    ),
-                                  ),
-                                ),
-                                Tab(
-                                  child: Text(
-                                    S.of(context)!.content,
-                                    style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer,
-                                    ),
-                                  ),
-                                ),
-                                Tab(
-                                  child: Text(
-                                    S.of(context)!.metaData,
-                                    style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer,
-                                    ),
-                                  ),
-                                ),
-                                Tab(
-                                  child: Text(
-                                    S.of(context)!.similarDocuments,
-                                    style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer,
-                                    ),
-                                  ),
-                                ),
-                                Tab(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        S.of(context)!.notes(0),
-                                        style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimaryContainer,
-                                        ),
-                                      ),
-                                      if ((state.document?.notes.length ?? 0) >
-                                          0)
-                                        Card(
-                                          child: Text(state
-                                                  .document!.notes.length
-                                                  .toString())
-                                              .paddedSymmetrically(
-                                                  horizontal: 8, vertical: 2),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                if (hasMultiUserSupport)
-                                  Tab(
-                                    child: Text(
-                                      S.of(context)!.permissions,
-                                      style: TextStyle(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimaryContainer,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-                body: BlocBuilder<DocumentDetailsCubit, DocumentDetailsState>(
-                  builder: (context, state) {
-                    return BlocProvider(
-                      create: (context) => SimilarDocumentsCubit(
-                        context.read(),
-                        context.read(),
-                        context.read(),
-                        documentId: widget.id,
+    );
+    return FormBuilder(
+      key: _formKey,
+      child: AnnotatedRegion(
+        value: buildOverlayStyle(
+          Theme.of(context),
+          systemNavigationBarColor: Theme.of(context).bottomAppBarTheme.color,
+        ),
+        child: BlocBuilder<DocumentDetailsCubit, DocumentDetailsState>(
+          builder: (context, state) {
+            return DefaultTabController(
+              length: tabLength,
+              child: Scaffold(
+                extendBodyBehindAppBar: false,
+                floatingActionButtonLocation:
+                    FloatingActionButtonLocation.endDocked,
+                floatingActionButton: switch (state.status) {
+                  LoadingStatus.loaded =>
+                    _buildEditButton(state.data!.document),
+                  _ => null
+                },
+                bottomNavigationBar: _buildBottomAppBar(),
+                body: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    SliverOverlapAbsorber(
+                      handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                          context),
+                      sliver: BlocBuilder<DocumentDetailsCubit,
+                          DocumentDetailsState>(
+                        builder: (context, state) {
+                          final title = switch (state.status) {
+                            LoadingStatus.loaded => state.data!.document.title,
+                            _ => widget.title ?? '',
+                          };
+                          return _buildAppBar(title, innerBoxIsScrolled,
+                              context, state, hasMultiUserSupport);
+                        },
                       ),
-                      child: TabBarView(
-                        children: [
-                          CustomScrollView(
-                            slivers: [
-                              SliverOverlapInjector(
-                                handle: NestedScrollView
-                                    .sliverOverlapAbsorberHandleFor(context),
-                              ),
-                              switch (state.status) {
-                                LoadingStatus.loaded => DocumentOverviewWidget(
-                                    document: state.document!,
-                                    itemSpacing: _itemSpacing,
-                                    queryString:
-                                        widget.titleAndContentQueryString,
-                                  ).paddedSymmetrically(
-                                    vertical: 16,
-                                    sliver: true,
-                                  ),
-                                LoadingStatus.error => _buildErrorState(),
-                                _ => _buildLoadingState(),
-                              },
-                            ],
-                          ),
-                          CustomScrollView(
-                            slivers: [
-                              SliverOverlapInjector(
-                                handle: NestedScrollView
-                                    .sliverOverlapAbsorberHandleFor(context),
-                              ),
-                              switch (state.status) {
-                                LoadingStatus.loaded => DocumentContentWidget(
-                                    document: state.document!,
-                                    queryString:
-                                        widget.titleAndContentQueryString,
-                                  ).paddedSymmetrically(
-                                    vertical: 16,
-                                    sliver: true,
-                                  ),
-                                LoadingStatus.error => _buildErrorState(),
-                                _ => _buildLoadingState(),
-                              },
-                            ],
-                          ),
-                          CustomScrollView(
-                            slivers: [
-                              SliverOverlapInjector(
-                                handle: NestedScrollView
-                                    .sliverOverlapAbsorberHandleFor(context),
-                              ),
-                              switch (state.status) {
-                                LoadingStatus.loaded => DocumentMetaDataWidget(
-                                    document: state.document!,
-                                    itemSpacing: _itemSpacing,
-                                    metaData: state.metaData!,
-                                  ).paddedSymmetrically(
-                                    vertical: 16,
-                                    sliver: true,
-                                  ),
-                                LoadingStatus.error => _buildErrorState(),
-                                _ => _buildLoadingState(),
-                              },
-                            ],
-                          ),
-                          CustomScrollView(
-                            controller: _pagingScrollController,
-                            slivers: [
-                              SliverOverlapInjector(
-                                handle: NestedScrollView
-                                    .sliverOverlapAbsorberHandleFor(context),
-                              ),
-                              SimilarDocumentsView(
-                                pagingScrollController: _pagingScrollController,
-                              ).paddedSymmetrically(
-                                vertical: 16,
-                                sliver: true,
-                              ),
-                            ],
-                          ),
-                          CustomScrollView(
-                            slivers: [
-                              SliverOverlapInjector(
-                                handle: NestedScrollView
-                                    .sliverOverlapAbsorberHandleFor(context),
-                              ),
-                              switch (state.status) {
-                                LoadingStatus.loaded => DocumentNotesWidget(
-                                    document: state.document!,
-                                  ).paddedSymmetrically(
-                                    vertical: 16,
-                                    sliver: true,
-                                  ),
-                                LoadingStatus.error => _buildErrorState(),
-                                _ => _buildLoadingState(),
-                              },
-                            ],
-                          ),
-                          if (hasMultiUserSupport)
+                    ),
+                  ],
+                  body: BlocBuilder<DocumentDetailsCubit, DocumentDetailsState>(
+                    builder: (context, state) {
+                      return BlocProvider(
+                        create: (context) => SimilarDocumentsCubit(
+                          context.read(),
+                          context.read(),
+                          context.read(),
+                          documentId: widget.id,
+                        ),
+                        child: TabBarView(
+                          children: [
                             CustomScrollView(
-                              controller: _pagingScrollController,
                               slivers: [
                                 SliverOverlapInjector(
                                   handle: NestedScrollView
@@ -361,33 +149,272 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                                 ),
                                 switch (state.status) {
                                   LoadingStatus.loaded =>
-                                    DocumentPermissionsWidget(
-                                      document: state.document!,
+                                    DocumentEditFormWidget(
+                                      document: state.data!.document,
+                                      titleKey: 'title',
+                                      correspondentKey: 'correspondent',
+                                      tagsKey: 'tags',
+                                      createdKey: 'created',
+                                      documentTypeKey: 'documentType',
+                                      storagePathKey: 'storagePath',
                                     ).paddedSymmetrically(
                                       vertical: 16,
                                       sliver: true,
                                     ),
                                   LoadingStatus.error => _buildErrorState(),
                                   _ => _buildLoadingState(),
-                                }
+                                },
                               ],
                             ),
-                        ]
-                            .map(
-                              (child) => Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: child,
+                            CustomScrollView(
+                              slivers: [
+                                SliverOverlapInjector(
+                                  handle: NestedScrollView
+                                      .sliverOverlapAbsorberHandleFor(context),
+                                ),
+                                switch (state.status) {
+                                  LoadingStatus.loaded => DocumentContentWidget(
+                                      document: state.data!.document,
+                                      queryString:
+                                          widget.titleAndContentQueryString,
+                                    ).paddedSymmetrically(
+                                      vertical: 16,
+                                      sliver: true,
+                                    ),
+                                  LoadingStatus.error => _buildErrorState(),
+                                  _ => _buildLoadingState(),
+                                },
+                              ],
+                            ),
+                            CustomScrollView(
+                              slivers: [
+                                SliverOverlapInjector(
+                                  handle: NestedScrollView
+                                      .sliverOverlapAbsorberHandleFor(context),
+                                ),
+                                switch (state.status) {
+                                  LoadingStatus.loaded =>
+                                    DocumentMetaDataWidget(
+                                      document: state.data!.document,
+                                      itemSpacing: _itemSpacing,
+                                      metaData: state.data!.metaData,
+                                    ).paddedSymmetrically(
+                                      vertical: 16,
+                                      sliver: true,
+                                    ),
+                                  LoadingStatus.error => _buildErrorState(),
+                                  _ => _buildLoadingState(),
+                                },
+                              ],
+                            ),
+                            CustomScrollView(
+                              controller: _pagingScrollController,
+                              slivers: [
+                                SliverOverlapInjector(
+                                  handle: NestedScrollView
+                                      .sliverOverlapAbsorberHandleFor(context),
+                                ),
+                                SimilarDocumentsView(
+                                  pagingScrollController:
+                                      _pagingScrollController,
+                                ).paddedSymmetrically(
+                                  vertical: 16,
+                                  sliver: true,
+                                ),
+                              ],
+                            ),
+                            CustomScrollView(
+                              slivers: [
+                                SliverOverlapInjector(
+                                  handle: NestedScrollView
+                                      .sliverOverlapAbsorberHandleFor(context),
+                                ),
+                                switch (state.status) {
+                                  LoadingStatus.loaded => DocumentNotesWidget(
+                                      document: state.data!.document,
+                                    ).paddedSymmetrically(
+                                      vertical: 16,
+                                      sliver: true,
+                                    ),
+                                  LoadingStatus.error => _buildErrorState(),
+                                  _ => _buildLoadingState(),
+                                },
+                              ],
+                            ),
+                            if (hasMultiUserSupport)
+                              CustomScrollView(
+                                controller: _pagingScrollController,
+                                slivers: [
+                                  SliverOverlapInjector(
+                                    handle: NestedScrollView
+                                        .sliverOverlapAbsorberHandleFor(
+                                            context),
+                                  ),
+                                  switch (state.status) {
+                                    LoadingStatus.loaded =>
+                                      DocumentPermissionsWidget(
+                                        document: state.data!.document,
+                                      ).paddedSymmetrically(
+                                        vertical: 16,
+                                        sliver: true,
+                                      ),
+                                    LoadingStatus.error => _buildErrorState(),
+                                    _ => _buildLoadingState(),
+                                  }
+                                ],
                               ),
-                            )
-                            .toList(),
+                          ]
+                              .map(
+                                (child) => Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: child,
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  SliverAppBar _buildAppBar(
+      String title,
+      bool innerBoxIsScrolled,
+      BuildContext context,
+      DocumentDetailsState state,
+      bool hasMultiUserSupport) {
+    return SliverAppBar(
+      title: Text(title),
+      leading: const BackButton(),
+      pinned: true,
+      forceElevated: innerBoxIsScrolled,
+      collapsedHeight: kToolbarHeight,
+      expandedHeight: 250.0,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Builder(
+          builder: (context) {
+            return Hero(
+              tag: widget.heroTag ?? "thumb_${widget.id}",
+              child: GestureDetector(
+                onTap: () {
+                  DocumentPreviewRoute(
+                    id: widget.id,
+                    title: title,
+                  ).push(context);
+                },
+                child: Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    Positioned.fill(
+                      child: DocumentPreview(
+                        documentId: widget.id,
+                        title: title,
+                        enableHero: false,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
                       ),
-                    );
-                  },
+                    ),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            stops: [0.2, 0.4],
+                            colors: [
+                              Theme.of(context)
+                                  .colorScheme
+                                  .background
+                                  .withOpacity(0.6),
+                              Theme.of(context)
+                                  .colorScheme
+                                  .background
+                                  .withOpacity(0.3),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ).accessible();
+          },
+        ),
+      ),
+      bottom: ColoredTabBar(
+        tabBar: TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          tabs: [
+            Tab(
+              child: Text(
+                S.of(context)!.overview,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
-          );
-        },
+            Tab(
+              child: Text(
+                S.of(context)!.content,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            Tab(
+              child: Text(
+                S.of(context)!.metaData,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            Tab(
+              child: Text(
+                S.of(context)!.similarDocuments,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    S.of(context)!.notes(0),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  if ((state.data!.document.notes.length ?? 0) > 0)
+                    Card(
+                      child: Text(state.data!.document.notes.length.toString())
+                          .paddedSymmetrically(horizontal: 8, vertical: 2),
+                    ),
+                ],
+              ),
+            ),
+            if (hasMultiUserSupport)
+              Tab(
+                child: Text(
+                  S.of(context)!.permissions,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -450,7 +477,7 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                         child: IconButton(
                           tooltip: S.of(context)!.deleteDocumentTooltip,
                           icon: const Icon(Icons.delete),
-                          onPressed: () => _onDelete(state.document!),
+                          onPressed: () => _onDelete(state.data!.document),
                         ).paddedSymmetrically(horizontal: 4),
                       ),
                       ConnectivityAwareActionWrapper(
@@ -460,7 +487,7 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                           enabled: false,
                         ),
                         child: DocumentDownloadButton(
-                          document: state.document,
+                          document: state.data?.document,
                         ),
                       ),
                       ConnectivityAwareActionWrapper(
@@ -474,7 +501,7 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                           onPressed: _onOpenFileInSystemViewer,
                         ).paddedOnly(right: 4.0),
                       ),
-                      DocumentShareButton(document: state.document),
+                      DocumentShareButton(document: state.data?.document),
                       IconButton(
                         tooltip: S.of(context)!.print,
                         onPressed: () => context

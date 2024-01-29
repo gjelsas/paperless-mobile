@@ -53,11 +53,11 @@ class _ArchiveSerialNumberFieldState extends State<ArchiveSerialNumberField> {
       listenWhen: (previous, current) =>
           previous.status == LoadingStatus.loaded &&
           current.status == LoadingStatus.loaded &&
-          previous.document!.archiveSerialNumber !=
-              current.document!.archiveSerialNumber,
+          previous.data!.document.archiveSerialNumber !=
+              current.data!.document.archiveSerialNumber,
       listener: (context, state) {
         _asnEditingController.text =
-            state.document!.archiveSerialNumber?.toString() ?? '';
+            state.data!.document.archiveSerialNumber?.toString() ?? '';
         setState(() {
           _canUpdate = false;
         });

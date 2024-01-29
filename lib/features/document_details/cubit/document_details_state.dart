@@ -1,10 +1,23 @@
 part of 'document_details_cubit.dart';
 
-@freezed
-class DocumentDetailsState with _$DocumentDetailsState {
-  const factory DocumentDetailsState({
-    @Default(LoadingStatus.initial) LoadingStatus status,
+class DocumentDetailsData {
+  final DocumentModel document;
+  final DocumentMetaData metaData;
+
+  const DocumentDetailsData({
+    required this.document,
+    required this.metaData,
+  });
+
+  DocumentDetailsData copyWith({
     DocumentModel? document,
     DocumentMetaData? metaData,
-  }) = _DocumentDetailsState;
+  }) {
+    return DocumentDetailsData(
+      document: document ?? this.document,
+      metaData: metaData ?? this.metaData,
+    );
+  }
 }
+
+typedef DocumentDetailsState = BaseState<DocumentDetailsData>;

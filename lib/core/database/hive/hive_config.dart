@@ -41,9 +41,9 @@ class HiveTypeIds {
   static const clientCertificate = 5;
   static const localUserCredentials = 6;
   static const localUserAccount = 7;
+  static const localUserAppState = 8;
   static const viewType = 9;
   static const fileDownloadType = 10;
-  static const localUserAppState = 8;
 }
 
 void registerHiveAdapters() {

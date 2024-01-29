@@ -49,12 +49,6 @@ void registerPaperlessApiHiveTypeAdapters() {
   Hive.registerAdapter(UnsetDateRangeQueryAdapter());
   Hive.registerAdapter(TextQueryAdapter());
   Hive.registerAdapter(QueryTypeAdapter());
-  // IdQueryParameter
-  // Hive.registerAdapter(SetIdQueryParameterAdapter());
-  // Hive.registerAdapter(UnsetIdQueryParameterAdapter());
-  // Hive.registerAdapter(AnyAssignedIdQueryParameterAdapter());
-  // Hive.registerAdapter(NotAssignedIdQueryParameterAdapter());
-  // Users and permissions
   Hive.registerAdapter(UserModelV3Adapter());
   Hive.registerAdapter(UserModelV2Adapter());
   Hive.registerAdapter(GroupModelAdapter());
