@@ -8,6 +8,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:go_router/go_router.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/repository/label_repository.dart';
+import 'package:paperless_mobile/features/document_details/view/widgets/field_suggestions_widget.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/fullscreen_multi_selection_label_form.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/types.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
@@ -28,6 +29,9 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
   final Widget prefixIcon;
   final AddLabelCallback onAddLabel;
 
+  final Iterable<int>? suggestions;
+  final bool showSuggestions;
+
   const SingleLabelSelectionFormBuilderField({
     super.key,
     required this.name,
@@ -42,6 +46,8 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
     required this.optionsSelector,
     required this.addNewLabelText,
     required this.labelText,
+    this.suggestions,
+    this.showSuggestions = false,
   });
 
   static Widget _defaultOptionsBuilder(
@@ -80,23 +86,46 @@ class SingleLabelSelectionFormBuilderField<T extends Label>
           tappable: enabled,
           closedBuilder: (context, openForm) => Container(
             margin: const EdgeInsets.only(top: 6),
-            child: TextField(
-              controller: TextEditingController(
-                text: options[field.value]?.name,
-              ),
-              onTap: openForm,
-              readOnly: true,
-              enabled: enabled,
-              decoration: InputDecoration(
-                hintText: options[field.value]?.name ?? labelText,
-                prefixIcon: prefixIcon,
-                suffixIcon: field.value != null
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => field.didChange(null),
-                      )
-                    : null,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: TextEditingController(
+                    text: options[field.value]?.name,
+                  ),
+                  onTap: openForm,
+                  readOnly: true,
+                  enabled: enabled,
+                  decoration: InputDecoration(
+                    hintText: options[field.value]?.name,
+                    prefixIcon: prefixIcon,
+                    suffixIcon: field.value != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () => field.didChange(null),
+                          )
+                        : null,
+                    labelText: labelText,
+                  ),
+                ),
+                Builder(
+                  builder: (context) {
+                    if (!showSuggestions || (suggestions?.isEmpty ?? true)) {
+                      return const SizedBox.shrink();
+                    }
+                    return FieldSuggestionsWidget<int>(
+                      suggestions: suggestions!,
+                      valueTransformer: (suggestion) =>
+                          options[suggestion]?.name ?? '',
+                      onSuggestionSelected: (value) {
+                        field.didChange(value);
+                      },
+                      currentValue: field.value,
+                    );
+                  },
+                ),
+              ],
             ),
           ),
           openBuilder: (context, closeForm) {

@@ -118,17 +118,10 @@ class HomeShellWidget extends StatelessWidget {
                   providers: [
                     ChangeNotifierProvider(
                       create: (context) {
-                        return LabelRepository(context.read())
-                          ..initialize(
-                            loadCorrespondents: currentLocalUser
-                                .paperlessUser.canViewCorrespondents,
-                            loadDocumentTypes: currentLocalUser
-                                .paperlessUser.canViewDocumentTypes,
-                            loadStoragePaths: currentLocalUser
-                                .paperlessUser.canViewStoragePaths,
-                            loadTags:
-                                currentLocalUser.paperlessUser.canViewTags,
-                          );
+                        return LabelRepository(
+                          context.read(),
+                          context.read(),
+                        )..initialize();
                       },
                     ),
                     ChangeNotifierProvider(

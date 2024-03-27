@@ -22,11 +22,12 @@ import 'package:paperless_mobile/features/document_scan/view/widgets/export_scan
 import 'package:paperless_mobile/features/document_scan/view/widgets/scanned_image_item.dart';
 import 'package:paperless_mobile/features/document_search/view/sliver_search_bar.dart';
 import 'package:paperless_mobile/features/document_upload/view/document_upload_preparation_page.dart';
-import 'package:paperless_mobile/features/documents/view/pages/document_view.dart';
+import 'package:paperless_mobile/features/document_viewer/view/document_viewer.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/helpers/connectivity_aware_action_wrapper.dart';
 import 'package:paperless_mobile/helpers/message_helpers.dart';
 import 'package:paperless_mobile/helpers/permission_helpers.dart';
+import 'package:paperless_mobile/routing/routes/preview_route.dart';
 import 'package:paperless_mobile/routing/routes/scanner_route.dart';
 import 'package:paperless_mobile/routing/routes/shells/authenticated_route.dart';
 import 'package:path/path.dart' as p;
@@ -118,16 +119,13 @@ class _ScannerPageState extends State<ScannerPage>
                       padding: const EdgeInsets.fromLTRB(5, 10, 5, 10),
                     ),
                     onPressed: state.scans.isNotEmpty
-                        ? () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => DocumentView(
-                                  bytes: _assembleFileBytes(
-                                    state.scans,
-                                    forcePdf: true,
-                                  ).then((file) => file.bytes),
-                                ),
-                              ),
-                            )
+                        ? () {
+                            final bytes = _assembleFileBytes(
+                              state.scans,
+                              forcePdf: true,
+                            ).then((file) => file.bytes);
+                            PreviewRoute($extra: bytes).push(context);
+                          }
                         : null,
                     icon: const Icon(Icons.visibility_outlined),
                   ),

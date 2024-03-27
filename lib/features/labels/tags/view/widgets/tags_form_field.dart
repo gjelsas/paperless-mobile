@@ -130,9 +130,9 @@ class TagsFormField extends StatelessWidget {
                               field.didChange(switch (field.value) {
                                 IdsTagsQuery(include: var include) =>
                                   IdsTagsQuery(
-                                    include: [...include, suggestion.id!],
+                                    include: {...include, suggestion.id!},
                                   ),
-                                _ => IdsTagsQuery(include: [suggestion.id!]),
+                                _ => IdsTagsQuery(include: {suggestion.id!}),
                               });
                             },
                           ),
@@ -187,30 +187,23 @@ class TagsFormField extends StatelessWidget {
     final tag = options[id]!;
     return QueryTagChip(
       onDeleted: () => field.didChange(formValue.copyWith(
-        include:
-            formValue.include.whereNot((element) => element == id).toList(),
-        exclude:
-            formValue.exclude.whereNot((element) => element == id).toList(),
+        include: formValue.include.difference({id}),
+        exclude: formValue.exclude.difference({id}),
       )),
       onSelected: allowExclude
           ? () {
               if (formValue.include.contains(id)) {
                 field.didChange(
                   formValue.copyWith(
-                    include: formValue.include
-                        .whereNot((element) => element == id)
-                        .toList(),
-                    exclude: [...formValue.exclude, id],
+                    include: formValue.include.difference({id}),
+                    exclude: {...formValue.exclude, id},
                   ),
                 );
               } else if (formValue.exclude.contains(id)) {}
               field.didChange(
                 formValue.copyWith(
-                  include: [...formValue.include, id],
-                  exclude: formValue.exclude
-                      .whereNot((element) => element == id)
-                      .toList(),
-                ),
+                    include: {...formValue.include, id},
+                    exclude: formValue.exclude.difference({id})),
               );
             }
           : null,
@@ -243,7 +236,7 @@ class TagsFormField extends StatelessWidget {
     return QueryTagChip(
       onDeleted: () {
         final updatedQuery = query.copyWith(
-          tagIds: query.tagIds.whereNot((element) => element == e).toList(),
+          tagIds: query.tagIds.difference({e}),
         );
         if (updatedQuery.tagIds.isEmpty) {
           field.didChange(const IdsTagsQuery());

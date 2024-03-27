@@ -19,7 +19,8 @@ class _DocumentPermissionsWidgetState extends State<DocumentPermissionsWidget> {
     return BlocBuilder<UserRepository, UserRepositoryState>(
       builder: (context, state) {
         final owner = state.users[widget.document.owner];
-        return SliverList.list(
+        return ListView(
+          padding: const EdgeInsets.all(16),
           children: [
             if (owner != null)
               DetailsItem.text(

@@ -8,6 +8,7 @@ import 'package:paperless_mobile/core/bloc/connectivity_cubit.dart';
 import 'package:paperless_mobile/core/database/tables/local_user_account.dart';
 import 'package:paperless_mobile/core/extensions/document_extensions.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
+import 'package:paperless_mobile/core/repository/label_repository.dart';
 import 'package:paperless_mobile/core/util/list_utils.dart';
 import 'package:paperless_mobile/features/app_drawer/view/app_drawer.dart';
 import 'package:paperless_mobile/features/document_search/view/sliver_search_bar.dart';
@@ -42,7 +43,7 @@ class DocumentFilterIntent {
 }
 
 class DocumentsPage extends StatefulWidget {
-  const DocumentsPage({Key? key}) : super(key: key);
+  const DocumentsPage({super.key});
 
   @override
   State<DocumentsPage> createState() => _DocumentsPageState();
@@ -98,13 +99,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
       await Future.wait([
         context.read<DocumentsCubit>().reload(),
         if (user.canViewSavedViews) context.read<SavedViewCubit>().reload(),
-        if (user.canViewTags) context.read<LabelCubit>().reloadTags(),
-        if (user.canViewCorrespondents)
-          context.read<LabelCubit>().reloadCorrespondents(),
-        if (user.canViewDocumentTypes)
-          context.read<LabelCubit>().reloadDocumentTypes(),
-        if (user.canViewStoragePaths)
-          context.read<LabelCubit>().reloadStoragePaths(),
+        context.read<LabelRepository>().reload(),
       ]);
     } catch (error, stackTrace) {
       showGenericError(context, error, stackTrace);
@@ -380,9 +375,13 @@ class _DocumentsPageState extends State<DocumentsPage> {
                     onUpdateView: (view) async {
                       await context.read<SavedViewCubit>().update(view);
                       showSnackBar(
-                          context, S.of(context)!.savedViewSuccessfullyUpdated);
+                        context,
+                        S.of(context)!.savedViewSuccessfullyUpdated,
+                      );
                     },
                     onDeleteView: (view) async {
+                      final documentsCubit = context.read<DocumentsCubit>();
+                      final savedViewCubit = context.read<SavedViewCubit>();
                       HapticFeedback.mediumImpact();
                       final shouldRemove = await showDialog(
                         context: context,
@@ -390,8 +389,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                             ConfirmDeleteSavedViewDialog(view: view),
                       );
                       if (shouldRemove) {
-                        final documentsCubit = context.read<DocumentsCubit>();
-                        context.read<SavedViewCubit>().remove(view);
+                        savedViewCubit.remove(view);
                         if (documentsCubit.state.filter.selectedView ==
                             view.id) {
                           documentsCubit.resetFilter();
@@ -416,12 +414,14 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 final allowToggleFilter = state.selection.isEmpty;
                 return SliverAdaptiveDocumentsView(
                   viewType: state.viewType,
-                  onTap: (document) {
-                    DocumentDetailsRoute(
+                  onTap: (document) async {
+                    final documentsCubit = context.read<DocumentsCubit>();
+                    await DocumentDetailsRoute(
                       title: document.title,
                       id: document.id,
                       thumbnailUrl: document.buildThumbnailUrl(context),
                     ).push(context);
+                    documentsCubit.reload();
                   },
                   onSelected:
                       context.read<DocumentsCubit>().toggleDocumentSelection,
@@ -533,7 +533,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 tags: state.copyWith(
                   include: state.include
                       .whereNot((element) => element == tagId)
-                      .toList(),
+                      .toSet(),
                 ),
               ),
             );
@@ -543,21 +543,21 @@ class _DocumentsPageState extends State<DocumentsPage> {
                 tags: state.copyWith(
                   exclude: state.exclude
                       .whereNot((element) => element == tagId)
-                      .toList(),
+                      .toSet(),
                 ),
               ),
             );
           } else {
             cubit.updateCurrentFilter(
               (filter) => filter.copyWith(
-                tags: state.copyWith(include: [...state.include, tagId]),
+                tags: state.copyWith(include: {...state.include, tagId}),
               ),
             );
           }
           break;
         default:
           cubit.updateCurrentFilter(
-            (filter) => filter.copyWith(tags: IdsTagsQuery(include: [tagId])),
+            (filter) => filter.copyWith(tags: IdsTagsQuery(include: {tagId})),
           );
           break;
       }
@@ -572,19 +572,18 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
     try {
       switch (cubit.state.filter.correspondents) {
-        case SetIdQueryParameter(includeIds: var includeIds):
+        case SetIdQueryParameter(ids: var includeIds):
           cubit.updateCurrentFilter(
             (filter) => filter.copyWith(
               correspondents: SetIdQueryParameter(
-                  includeIds: includeIds.toggle(correspondentId)),
+                  ids: includeIds.toggle(correspondentId).toSet()),
             ),
           );
           break;
         default:
           cubit.updateCurrentFilter(
             (filter) => filter.copyWith(
-              correspondents:
-                  SetIdQueryParameter(includeIds: [correspondentId]),
+              correspondents: SetIdQueryParameter(ids: {correspondentId}),
             ),
           );
           break;
@@ -600,18 +599,18 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
     try {
       switch (cubit.state.filter.documentTypes) {
-        case SetIdQueryParameter(includeIds: var includeIds):
+        case SetIdQueryParameter(ids: var includeIds):
           cubit.updateCurrentFilter(
             (filter) => filter.copyWith(
               documentTypes: SetIdQueryParameter(
-                  includeIds: includeIds.toggle(documentTypeId)),
+                  ids: includeIds.toggle(documentTypeId).toSet()),
             ),
           );
           break;
         default:
           cubit.updateCurrentFilter(
             (filter) => filter.copyWith(
-              documentTypes: SetIdQueryParameter(includeIds: [documentTypeId]),
+              documentTypes: SetIdQueryParameter(ids: {documentTypeId}),
             ),
           );
           break;
@@ -627,18 +626,18 @@ class _DocumentsPageState extends State<DocumentsPage> {
 
     try {
       switch (cubit.state.filter.storagePaths) {
-        case SetIdQueryParameter(includeIds: var includeIds):
+        case SetIdQueryParameter(ids: var includeIds):
           cubit.updateCurrentFilter(
             (filter) => filter.copyWith(
               storagePaths:
-                  SetIdQueryParameter(includeIds: includeIds.toggle(pathId)),
+                  SetIdQueryParameter(ids: includeIds.toggle(pathId).toSet()),
             ),
           );
           break;
         default:
           cubit.updateCurrentFilter(
             (filter) => filter.copyWith(
-              storagePaths: SetIdQueryParameter(includeIds: [pathId]),
+              storagePaths: SetIdQueryParameter(ids: {pathId}),
             ),
           );
           break;

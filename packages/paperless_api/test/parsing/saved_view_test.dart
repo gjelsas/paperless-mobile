@@ -65,12 +65,12 @@ void main() {
         }).toDocumentFilter(),
         equals(
           DocumentFilter(
-            correspondents: const SetIdQueryParameter(includeIds: [42]),
-            documentTypes: const SetIdQueryParameter(includeIds: [69]),
-            storagePaths: const SetIdQueryParameter(includeIds: [14]),
+            correspondents: const SetIdQueryParameter(ids: {42}),
+            documentTypes: const SetIdQueryParameter(ids: {69}),
+            storagePaths: const SetIdQueryParameter(ids: {14}),
             tags: const IdsTagsQuery(
-              include: [1, 2],
-              exclude: [3, 4],
+              include: {1, 2},
+              exclude: {3, 4},
             ),
             created: AbsoluteDateRangeQuery(
               before: DateTime.parse("2022-10-27"),
@@ -155,12 +155,12 @@ void main() {
         SavedView.fromDocumentFilter(
           DocumentFilter(
             selectedView: 1,
-            correspondents: const SetIdQueryParameter(includeIds: [1]),
-            documentTypes: const SetIdQueryParameter(includeIds: [2]),
-            storagePaths: const SetIdQueryParameter(includeIds: [3]),
+            correspondents: const SetIdQueryParameter(ids: {1}),
+            documentTypes: const SetIdQueryParameter(ids: {2}),
+            storagePaths: const SetIdQueryParameter(ids: {3}),
             tags: const IdsTagsQuery(
-              include: [4, 5],
-              exclude: [6, 7, 8],
+              include: {4, 5},
+              exclude: {6, 7, 8},
             ),
             sortField: SortField.added,
             sortOrder: SortOrder.ascending,

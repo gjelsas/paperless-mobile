@@ -1,22 +1,37 @@
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:hive/hive.dart';
-import 'package:paperless_api/config/hive/hive_type_ids.dart';
+import 'package:json_annotation/json_annotation.dart';
+import 'package:paperless_api/src/models/labels/label_model.dart';
 
-// part 'id_query_parameter.g.dart';
+part 'id_query_parameter.g.dart';
 
 sealed class IdQueryParameter with EquatableMixin {
   const IdQueryParameter();
   Map<String, String> toQueryParameter(String field);
   bool matches(int? id);
 
+  Map<String, dynamic> toJson();
+
   bool get isUnset => this is UnsetIdQueryParameter;
   bool get isSet => this is SetIdQueryParameter;
   bool get isOnlyNotAssigned => this is NotAssignedIdQueryParameter;
-  bool get isOnlyAssigned => this is AnyAssignedIdQueryParameter;
+
+  factory IdQueryParameter.fromJson(Map<String, dynamic> json) {
+    final type = json['type'] as String;
+    switch (type) {
+      case 'UnsetIdQueryParameter':
+        return UnsetIdQueryParameter.fromJson(json);
+      case 'NotAssignedIdQueryParameter':
+        return NotAssignedIdQueryParameter.fromJson(json);
+      case 'SetIdQueryParameter':
+        return SetIdQueryParameter.fromJson(json);
+      default:
+        throw ArgumentError.value(type, 'type', 'Unknown type');
+    }
+  }
 }
 
-// @HiveType(typeId: PaperlessApiHiveTypeIds.unsetIdQueryParameter)
+@JsonSerializable()
 class UnsetIdQueryParameter extends IdQueryParameter {
   const UnsetIdQueryParameter();
   @override
@@ -27,9 +42,15 @@ class UnsetIdQueryParameter extends IdQueryParameter {
 
   @override
   List<Object?> get props => [];
+
+  @override
+  Map<String, dynamic> toJson() => {"_type": runtimeType};
+
+  factory UnsetIdQueryParameter.fromJson(Map<String, dynamic> json) =>
+      _$UnsetIdQueryParameterFromJson(json);
 }
 
-// @HiveType(typeId: PaperlessApiHiveTypeIds.notAssignedIdQueryParameter)
+@JsonSerializable()
 class NotAssignedIdQueryParameter extends IdQueryParameter {
   const NotAssignedIdQueryParameter();
 
@@ -42,123 +63,60 @@ class NotAssignedIdQueryParameter extends IdQueryParameter {
   bool matches(int? id) => id == null;
   @override
   List<Object?> get props => [];
+
+  @override
+  Map<String, dynamic> toJson() => {
+        "_type": runtimeType.toString(),
+      };
+
+  factory NotAssignedIdQueryParameter.fromJson(Map<String, dynamic> json) =>
+      _$NotAssignedIdQueryParameterFromJson(json);
 }
 
-class AnyAssignedIdQueryParameter extends IdQueryParameter {
-  const AnyAssignedIdQueryParameter();
-  @override
-  Map<String, String> toQueryParameter(String field) {
-    return {'${field}__isnull': '0'};
-  }
+@JsonEnum()
+enum SetIdQueryParameterType { include, exclude }
 
-  @override
-  bool matches(int? id) => id != null;
-  @override
-  List<Object?> get props => [];
-}
-
-class SetIdQueryParameter extends IdQueryParameter with EquatableMixin {
-  final List<int> includeIds;
-  final List<int> excludeIds;
+@JsonSerializable()
+class SetIdQueryParameter extends IdQueryParameter {
+  final Set<int> ids;
+  final SetIdQueryParameterType type;
 
   const SetIdQueryParameter({
-    required this.includeIds,
-    this.excludeIds = const [],
+    required this.ids,
+    this.type = SetIdQueryParameterType.include,
   });
 
   @override
   Map<String, String> toQueryParameter(String field) {
-    if (includeIds.isEmpty) {
+    if (ids.isEmpty) {
       return {};
     }
-    return {'${field}__id__in': includeIds.join(',')};
+    return switch (type) {
+      SetIdQueryParameterType.include => {'${field}__id__in': ids.join(',')},
+      SetIdQueryParameterType.exclude => {'${field}__id__none': ids.join(',')},
+    };
   }
 
   @override
-  bool matches(int? id) => includeIds.contains(id);
+  bool matches(int? id) {
+    if (ids.isEmpty) {
+      return true;
+    }
+    return switch (type) {
+      SetIdQueryParameterType.include => ids.contains(id),
+      SetIdQueryParameterType.exclude => !ids.contains(id),
+    };
+  }
 
   @override
-  List<Object?> get props => [includeIds.sorted((a, b) => a.compareTo(b))];
+  List<Object?> get props => [ids, type];
+
+  @override
+  Map<String, dynamic> toJson() => {
+        "_type": runtimeType,
+        "includeIds": ids,
+      };
+
+  factory SetIdQueryParameter.fromJson(Map<String, dynamic> json) =>
+      _$SetIdQueryParameterFromJson(json);
 }
-
-/// Custom Adapters
-
-// class UnsetIdQueryParameterAdapter extends TypeAdapter<UnsetIdQueryParameter> {
-//   @override
-//   final int typeId = 116;
-
-//   @override
-//   UnsetIdQueryParameter read(BinaryReader reader) {
-//     reader.readByte();
-//     return const UnsetIdQueryParameter();
-//   }
-
-//   @override
-//   void write(BinaryWriter writer, UnsetIdQueryParameter obj) {
-//     writer.writeByte(0);
-//   }
-
-//   @override
-//   int get hashCode => typeId.hashCode;
-
-//   @override
-//   bool operator ==(Object other) =>
-//       identical(this, other) ||
-//       other is UnsetIdQueryParameterAdapter &&
-//           runtimeType == other.runtimeType &&
-//           typeId == other.typeId;
-// }
-
-// class NotAssignedIdQueryParameterAdapter
-//     extends TypeAdapter<NotAssignedIdQueryParameter> {
-//   @override
-//   final int typeId = 117;
-
-//   @override
-//   NotAssignedIdQueryParameter read(BinaryReader reader) {
-//     reader.readByte();
-//     return const NotAssignedIdQueryParameter();
-//   }
-
-//   @override
-//   void write(BinaryWriter writer, NotAssignedIdQueryParameter obj) {
-//     writer.writeByte(0);
-//   }
-
-//   @override
-//   int get hashCode => typeId.hashCode;
-
-//   @override
-//   bool operator ==(Object other) =>
-//       identical(this, other) ||
-//       other is NotAssignedIdQueryParameterAdapter &&
-//           runtimeType == other.runtimeType &&
-//           typeId == other.typeId;
-// }
-
-// class AnyAssignedIdQueryParameterAdapter
-//     extends TypeAdapter<AnyAssignedIdQueryParameter> {
-//   @override
-//   final int typeId = 118;
-
-//   @override
-//   AnyAssignedIdQueryParameter read(BinaryReader reader) {
-//     reader.readByte();
-//     return const AnyAssignedIdQueryParameter();
-//   }
-
-//   @override
-//   void write(BinaryWriter writer, AnyAssignedIdQueryParameter obj) {
-//     writer.writeByte(0);
-//   }
-
-//   @override
-//   int get hashCode => typeId.hashCode;
-
-//   @override
-//   bool operator ==(Object other) =>
-//       identical(this, other) ||
-//       other is AnyAssignedIdQueryParameterAdapter &&
-//           runtimeType == other.runtimeType &&
-//           typeId == other.typeId;
-// }

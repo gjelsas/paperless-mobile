@@ -6,6 +6,7 @@ import 'package:paperless_mobile/core/service/connectivity_status_service.dart';
 import 'package:paperless_mobile/features/logging/data/logger.dart';
 import 'package:paperless_mobile/features/paged_document_view/cubit/document_paging_bloc_mixin.dart';
 import 'package:paperless_mobile/features/paged_document_view/cubit/paged_documents_state.dart';
+import 'package:paperless_mobile/features/paged_document_view/cubit/paged_loading_status.dart';
 
 part 'similar_documents_state.dart';
 
@@ -36,25 +37,23 @@ class SimilarDocumentsCubit extends Cubit<SimilarDocumentsState>
 
   @override
   Future<void> initialize() async {
-    if (!state.hasLoaded) {
-      try {
-        await updateFilter(
-          filter: state.filter.copyWith(
-            moreLike: () => documentId,
-            sortField: SortField.score,
-          ),
-        );
-        emit(state.copyWith(error: null));
-      } on PaperlessApiException catch (e, stackTrace) {
-        logger.fe(
-          "An error occurred while loading similar documents for document $documentId",
-          className: "SimilarDocumentsCubit",
-          methodName: "initialize",
-          error: e.details,
-          stackTrace: stackTrace,
-        );
-        emit(state.copyWith(error: e.code));
-      }
+    try {
+      await updateFilter(
+        filter: state.filter.copyWith(
+          moreLike: () => documentId,
+          sortField: SortField.score,
+        ),
+      );
+      emit(state.copyWith(error: null));
+    } on PaperlessApiException catch (e, stackTrace) {
+      logger.fe(
+        "An error occurred while loading similar documents for document $documentId",
+        className: "SimilarDocumentsCubit",
+        methodName: "initialize",
+        error: e.details,
+        stackTrace: stackTrace,
+      );
+      emit(state.copyWith(error: e.code));
     }
   }
 

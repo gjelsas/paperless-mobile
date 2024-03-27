@@ -1,23 +1,13 @@
 part of 'document_details_cubit.dart';
 
-class DocumentDetailsData {
-  final DocumentModel document;
-  final DocumentMetaData metaData;
-
-  const DocumentDetailsData({
-    required this.document,
-    required this.metaData,
-  });
-
-  DocumentDetailsData copyWith({
-    DocumentModel? document,
-    DocumentMetaData? metaData,
-  }) {
-    return DocumentDetailsData(
-      document: document ?? this.document,
-      metaData: metaData ?? this.metaData,
-    );
-  }
+@freezed
+class DocumentDetailsData with _$DocumentDetailsData {
+  const factory DocumentDetailsData({
+    required DocumentModel document,
+    required DocumentMetaData metaData,
+    required FieldSuggestions fieldSuggestions,
+    required int nextAsn,
+  }) = _DocumentDetailsData;
 }
 
 typedef DocumentDetailsState = BaseState<DocumentDetailsData>;

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 extension WidgetPadding on Widget {
@@ -49,6 +50,28 @@ extension WidgetPadding on Widget {
       padding: EdgeInsets.fromLTRB(left, top, right, bottom),
       child: this,
     );
+  }
+}
+
+extension LoadingIcon on Widget {
+  Widget loading({
+    required bool loading,
+    double? progress,
+    Color? color,
+  }) {
+    return loading
+        ? SizedBox.square(
+            dimension: 16,
+            child: Center(
+              child: CircularProgressIndicator.adaptive(
+                strokeWidth: 2.5,
+                value: progress,
+                valueColor:
+                    color != null ? AlwaysStoppedAnimation<Color>(color) : null,
+              ),
+            ),
+          )
+        : this;
   }
 }
 

@@ -73,15 +73,11 @@ part 'authenticated_route.g.dart';
                   name: R.documentDetails,
                   routes: [],
                 ),
-                TypedGoRoute<EditDocumentRoute>(
-                  path: "edit",
-                  name: R.editDocument,
-                ),
                 TypedGoRoute<BulkEditDocumentsRoute>(
                   path: "bulk-edit",
                   name: R.bulkEditDocuments,
                 ),
-                TypedGoRoute<DocumentPreviewRoute>(
+                TypedGoRoute<DocumentViewerRoute>(
                   path: 'preview',
                   name: R.documentPreview,
                 ),

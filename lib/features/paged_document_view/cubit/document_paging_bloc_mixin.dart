@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/notifier/document_changed_notifier.dart';
 import 'package:paperless_mobile/core/service/connectivity_status_service.dart';
+import 'package:paperless_mobile/features/paged_document_view/cubit/paged_loading_status.dart';
 
 import 'paged_documents_state.dart';
 
@@ -20,26 +21,28 @@ mixin DocumentPagingBlocMixin<State extends DocumentPagingState>
   Future<void> onFilterUpdated(DocumentFilter filter) async {}
 
   Future<void> loadMore() async {
-    final hasConnection =
-        await connectivityStatusService.isConnectedToInternet();
-    if (state.isLastPageLoaded || !hasConnection || state.isLoading) {
+    if (state.isLastPageLoaded ||
+        state.status == PagedLoadingStatus.loading ||
+        state.status == PagedLoadingStatus.loadingMore) {
       return;
     }
-    emit(state.copyWithPaged(isLoading: true));
+    emit(state.copyWithPaged(status: PagedLoadingStatus.loadingMore));
     final newFilter = state.filter.copyWith(page: state.filter.page + 1);
     debugPrint("Fetching page ${newFilter.page}");
     try {
       final result = await api.findAll(newFilter);
       emit(
         state.copyWithPaged(
-          hasLoaded: true,
+          status: PagedLoadingStatus.loaded,
           filter: newFilter,
           value: [...state.value, result],
+          all: result.all,
         ),
       );
-    } finally {
       await onFilterUpdated(newFilter);
-      emit(state.copyWithPaged(isLoading: false));
+    } catch (e) {
+      emit(state.copyWithPaged(status: PagedLoadingStatus.error));
+      rethrow;
     }
   }
 
@@ -52,52 +55,53 @@ mixin DocumentPagingBlocMixin<State extends DocumentPagingState>
   /// Use [loadMore] to load more data.
   Future<void> updateFilter({
     final DocumentFilter filter = const DocumentFilter(),
-    bool emitLoading = true,
+    bool seamless = true,
   }) async {
-    final hasConnection =
-        await connectivityStatusService.isConnectedToInternet();
-    if (!hasConnection) {
-      // Just filter currently loaded documents
-      final filteredDocuments = state.value
-          .expand((page) => page.results)
-          .where((doc) => filter.matches(doc))
-          .toList();
-      if (emitLoading) {
-        emit(state.copyWithPaged(isLoading: true));
-      }
+    // final hasConnection =
+    //     await connectivityStatusService.isConnectedToInternet();
+    // if (!hasConnection) {
+    //   // Just filter currently loaded documents
+    //   final filteredDocuments = state.value
+    //       .expand((page) => page.results)
+    //       .where((doc) => filter.matches(doc))
+    //       .toList();
+    //   if (emitLoading) {
+    //     emit(state.copyWithPaged(isLoading: true));
+    //   }
 
-      emit(
-        state.copyWithPaged(
-          filter: filter,
-          value: [
-            PagedSearchResult(
-              results: filteredDocuments,
-              count: filteredDocuments.length,
-              next: null,
-              previous: null,
-            )
-          ],
-          hasLoaded: true,
-        ),
-      );
-      return;
-    }
+    //   emit(
+    //     state.copyWithPaged(
+    //       filter: filter,
+    //       value: [
+    //         PagedSearchResult(
+    //           all: filteredDocuments.map((e) => e.id).toList(),
+    //           results: filteredDocuments,
+    //           count: filteredDocuments.length,
+    //           next: null,
+    //           previous: null,
+    //         )
+    //       ],
+    //       hasLoaded: true,
+    //     ),
+    //   );
+    //   return;
+    // }
     try {
-      if (emitLoading) {
-        emit(state.copyWithPaged(isLoading: true));
+      if (seamless) {
+        emit(state.copyWithPaged(status: PagedLoadingStatus.loading));
       }
       final result = await api.findAll(filter.copyWith(page: 1));
 
-      emit(
-        state.copyWithPaged(
-          filter: filter,
-          value: [result],
-          hasLoaded: true,
-        ),
-      );
-    } finally {
-      // await onFilterUpdated(filter);
-      emit(state.copyWithPaged(isLoading: false));
+      emit(state.copyWithPaged(
+        filter: filter,
+        value: [result],
+        status: PagedLoadingStatus.loaded,
+        all: result.all,
+      ));
+      await onFilterUpdated(filter);
+    } catch (e) {
+      emit(state.copyWithPaged(status: PagedLoadingStatus.error));
+      rethrow;
     }
   }
 
@@ -105,7 +109,7 @@ mixin DocumentPagingBlocMixin<State extends DocumentPagingState>
   /// Convenience method which allows to directly use [DocumentFilter.copyWith] on the current filter.
   ///
   Future<void> updateCurrentFilter(
-    final DocumentFilter Function(DocumentFilter filter) transformFn,
+    DocumentFilter Function(DocumentFilter filter) transformFn,
   ) async =>
       updateFilter(filter: transformFn(state.filter));
 
@@ -118,23 +122,23 @@ mixin DocumentPagingBlocMixin<State extends DocumentPagingState>
   }
 
   Future<void> reload() async {
-    // emit(state.copyWithPaged(isLoading: true));
     final filter = state.filter.copyWith(page: 1);
     try {
       final result = await api.findAll(filter);
       if (!isClosed) {
         emit(state.copyWithPaged(
-          hasLoaded: true,
+          status: PagedLoadingStatus.loaded,
           value: [result],
-          isLoading: false,
           filter: filter,
+          all: result.all,
         ));
       }
-    } finally {
       await onFilterUpdated(filter);
+    } catch (e) {
       if (!isClosed) {
-        emit(state.copyWithPaged(isLoading: false));
+        emit(state.copyWithPaged(status: PagedLoadingStatus.error));
       }
+      rethrow;
     }
   }
 
@@ -156,8 +160,9 @@ mixin DocumentPagingBlocMixin<State extends DocumentPagingState>
     try {
       await api.delete(document);
       notifier.notifyDeleted(document);
-    } finally {
-      emit(state.copyWithPaged(isLoading: false));
+    } catch (e) {
+      emit(state.copyWithPaged(status: PagedLoadingStatus.error));
+      rethrow;
     }
   }
 

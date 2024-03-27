@@ -37,9 +37,10 @@ class DocumentPreview extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: isClickable
-            ? () => DocumentPreviewRoute(
+            ? () => DocumentViewerRoute(
                   id: documentId,
                   title: title,
+                  isFullscreen: true,
                 ).push(context)
             : null,
         child: Builder(builder: (context) {

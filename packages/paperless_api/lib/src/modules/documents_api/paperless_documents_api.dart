@@ -33,10 +33,12 @@ abstract class PaperlessDocumentsApi {
     bool original = false,
     void Function(double progress)? onProgressChanged,
   });
-  Future<FieldSuggestions> findSuggestions(DocumentModel document);
+  Future<FieldSuggestions> findSuggestions(int documentId);
 
   Future<List<String>> autocomplete(String query, [int limit = 10]);
 
-  Future<DocumentModel> addNote(
-      {required DocumentModel document, required String text});
+  Future<DocumentModel> addNote({
+    required DocumentModel document,
+    required String text,
+  });
 }

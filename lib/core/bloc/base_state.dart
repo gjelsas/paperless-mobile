@@ -11,6 +11,16 @@ class BaseState<T> {
     this.status = LoadingStatus.initial,
   });
 
+  const BaseState.loaded(T data)
+      : this(status: LoadingStatus.loaded, data: data);
+
+  const BaseState.loading() : this(status: LoadingStatus.loading);
+
+  BaseState<T> withError(Object error) => copyWith(
+        error: error,
+        status: LoadingStatus.error,
+      );
+
   BaseState<T> copyWith({
     Object? error,
     T? data,

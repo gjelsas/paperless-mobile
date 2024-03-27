@@ -10,27 +10,9 @@ import 'package:paperless_api/src/models/models.dart';
 /// </ul>
 ///
 abstract class PaperlessLabelsApi {
-  Future<Correspondent?> getCorrespondent(int id);
-  Future<List<Correspondent>> getCorrespondents([Iterable<int>? ids]);
-  Future<Correspondent> saveCorrespondent(Correspondent correspondent);
-  Future<Correspondent> updateCorrespondent(Correspondent correspondent);
-  Future<int> deleteCorrespondent(Correspondent correspondent);
-
-  Future<Tag?> getTag(int id);
-  Future<List<Tag>> getTags([Iterable<int>? ids]);
-  Future<Tag> saveTag(Tag tag);
-  Future<Tag> updateTag(Tag tag);
-  Future<int> deleteTag(Tag tag);
-
-  Future<DocumentType?> getDocumentType(int id);
-  Future<List<DocumentType>> getDocumentTypes([Iterable<int>? ids]);
-  Future<DocumentType> saveDocumentType(DocumentType type);
-  Future<DocumentType> updateDocumentType(DocumentType documentType);
-  Future<int> deleteDocumentType(DocumentType documentType);
-
-  Future<StoragePath?> getStoragePath(int id);
-  Future<List<StoragePath>> getStoragePaths([Iterable<int>? ids]);
-  Future<StoragePath> saveStoragePath(StoragePath path);
-  Future<StoragePath> updateStoragePath(StoragePath path);
-  Future<int> deleteStoragePath(StoragePath path);
+  Future<int> delete<T extends Label>(T label);
+  Future<T> create<T extends Label>(T label);
+  Future<T> update<T extends Label>(T label);
+  Future<T> find<T extends Label>(int id);
+  Future<Iterable<T>> findAll<T extends Label>([Iterable<int>? ids]);
 }

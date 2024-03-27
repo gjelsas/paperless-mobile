@@ -2,12 +2,13 @@ part of 'documents_cubit.dart';
 
 class DocumentsState extends DocumentPagingState {
   final List<DocumentModel> selection;
-
+  final List<int>? allDocumentIds;
   final ViewType viewType;
 
   const DocumentsState({
     this.selection = const [],
     this.viewType = ViewType.list,
+    this.allDocumentIds,
     super.value = const [],
     super.filter = const DocumentFilter(),
     super.hasLoaded = false,
@@ -23,6 +24,7 @@ class DocumentsState extends DocumentPagingState {
     DocumentFilter? filter,
     List<DocumentModel>? selection,
     ViewType? viewType,
+    List<int>? allDocumentIds,
   }) {
     return DocumentsState(
       hasLoaded: hasLoaded ?? this.hasLoaded,
@@ -31,6 +33,7 @@ class DocumentsState extends DocumentPagingState {
       filter: filter ?? this.filter,
       selection: selection ?? this.selection,
       viewType: viewType ?? this.viewType,
+      allDocumentIds: allDocumentIds ?? this.allDocumentIds,
     );
   }
 
@@ -38,6 +41,7 @@ class DocumentsState extends DocumentPagingState {
   List<Object?> get props => [
         selection,
         viewType,
+        allDocumentIds,
         super.filter,
         super.hasLoaded,
         super.isLoading,

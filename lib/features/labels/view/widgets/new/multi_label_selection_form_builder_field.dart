@@ -7,11 +7,10 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:go_router/go_router.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/repository/label_repository.dart';
+import 'package:paperless_mobile/features/document_details/view/widgets/field_suggestions_widget.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/single_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/types.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
-
-
 
 class MultiLabelSelectionFormBuilderField<T extends Label>
     extends StatelessWidget {
@@ -29,6 +28,8 @@ class MultiLabelSelectionFormBuilderField<T extends Label>
   final bool enabled;
   final Widget prefixIcon;
   final AddLabelCallback onAddLabel;
+  final Iterable<int>? suggestions;
+  final bool showSuggestions;
 
   const MultiLabelSelectionFormBuilderField({
     super.key,
@@ -45,6 +46,8 @@ class MultiLabelSelectionFormBuilderField<T extends Label>
     required this.optionsSelector,
     required this.addNewLabelText,
     required this.labelText,
+    this.suggestions,
+    this.showSuggestions = false,
   });
 
   static Widget _defaultOptionsBuilder(
@@ -70,8 +73,14 @@ class MultiLabelSelectionFormBuilderField<T extends Label>
   static Widget _defaultDisplayOptionBuilder(
     BuildContext context,
     Label label,
+    VoidCallback onDelete,
   ) {
-    return Chip(label: Text(label.name));
+    return Chip(
+      label: Text(label.name),
+      padding: EdgeInsets.zero,
+      deleteIcon: Icon(Icons.clear),
+      onDeleted: onDelete,
+    );
   }
 
   @override
@@ -83,64 +92,87 @@ class MultiLabelSelectionFormBuilderField<T extends Label>
       initialValue: initialValue,
       builder: (field) {
         final isEmpty = field.value?.isEmpty ?? true;
-        return OpenContainer<Iterable<int>>(
-          middleColor: Theme.of(context).colorScheme.background,
-          closedColor: Theme.of(context).colorScheme.background,
-          openColor: Theme.of(context).colorScheme.background,
-          closedShape: InputBorder.none,
-          openElevation: 0,
-          closedElevation: 0,
-          tappable: enabled,
-          closedBuilder: (context, openForm) => Container(
-            margin: const EdgeInsets.only(top: 6),
-            child: InputDecorator(
-              isEmpty: isEmpty,
-              decoration: InputDecoration(
-                labelText: labelText,
-                contentPadding: const EdgeInsets.all(12),
-                prefixIcon: prefixIcon,
-                enabled: enabled,
-                suffixIcon: field.value?.isNotEmpty ?? false
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          field.didChange(null);
-                        },
-                      )
-                    : null,
-              ),
-              child: SizedBox(
-                height: 32,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 4),
-                  itemBuilder: (context, index) => displayOptionBuilder(
-                    context,
-                    options[field.value!.elementAt(index)]!,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            OpenContainer<Iterable<int>>(
+              middleColor: Theme.of(context).colorScheme.background,
+              closedColor: Theme.of(context).colorScheme.background,
+              openColor: Theme.of(context).colorScheme.background,
+              closedShape: InputBorder.none,
+              openElevation: 0,
+              closedElevation: 0,
+              tappable: enabled,
+              closedBuilder: (context, openForm) {
+                return Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  child: InputDecorator(
+                    isEmpty: isEmpty,
+                    decoration: InputDecoration(
+                      labelText: labelText,
+                      contentPadding: const EdgeInsets.all(12),
+                      prefixIcon: prefixIcon,
+                      enabled: enabled,
+                      suffixIcon: field.value?.isNotEmpty ?? false
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                field.didChange(null);
+                              },
+                            )
+                          : null,
+                    ),
+                    child: SizedBox(
+                      height: 32,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 4),
+                        itemBuilder: (context, index) => displayOptionBuilder(
+                            context, options[field.value!.elementAt(index)]!,
+                            () {
+                          final newValue = field.value!.toList()
+                            ..removeAt(index);
+                          field.didChange(newValue);
+                        }),
+                        itemCount: field.value?.length ?? 0,
+                      ),
+                    ),
                   ),
-                  itemCount: field.value?.length ?? 0,
-                ),
-              ),
+                );
+              },
+              openBuilder: (context, closeForm) {
+                return _FullScreenSingleLabelSelectionForm<T>(
+                  initialValue: field.value,
+                  optionBuilder: optionBuilder,
+                  searchHintText: searchHintText,
+                  emptySearchMessage: emptySearchMessage,
+                  emptyOptionsMessage: emptyOptionsMessage,
+                  optionSelector: optionsSelector,
+                  onAddLabel: onAddLabel,
+                  addNewLabelText: addNewLabelText,
+                );
+              },
+              onClosed: (data) {
+                if (data != null) {
+                  field.didChange(data);
+                }
+              },
             ),
-          ),
-          openBuilder: (context, closeForm) {
-            return _FullScreenSingleLabelSelectionForm<T>(
-              initialValue: field.value,
-              optionBuilder: optionBuilder,
-              searchHintText: searchHintText,
-              emptySearchMessage: emptySearchMessage,
-              emptyOptionsMessage: emptyOptionsMessage,
-              optionSelector: optionsSelector,
-              onAddLabel: onAddLabel,
-              addNewLabelText: addNewLabelText,
-            );
-          },
-          onClosed: (data) {
-            if (data != null) {
-              field.didChange(data);
-            }
-          },
+            if (showSuggestions && suggestions?.isNotEmpty == true)
+              FieldSuggestionsWidget<int?>(
+                suggestions: suggestions!,
+                valueTransformer: (suggestion) =>
+                    options[suggestion]?.name ?? '',
+                onSuggestionSelected: (value) {
+                  final current = field.value ?? [];
+                  if (value != null) {
+                    field.didChange([...current, value]);
+                  }
+                },
+                currentValues: field.value,
+              ),
+          ],
         );
       },
     );

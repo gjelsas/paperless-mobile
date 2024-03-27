@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as rp;
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
@@ -26,35 +27,36 @@ import 'package:paperless_mobile/core/bloc/my_bloc_observer.dart';
 import 'package:paperless_mobile/core/database/hive/hive_config.dart';
 import 'package:paperless_mobile/core/database/hive/hive_extensions.dart';
 import 'package:paperless_mobile/core/database/hive/hive_initialization.dart';
-import 'package:paperless_mobile/core/database/tables/global_settings.dart';
-import 'package:paperless_mobile/core/database/tables/local_user_account.dart';
-import 'package:paperless_mobile/core/database/tables/local_user_app_state.dart';
 import 'package:paperless_mobile/core/exception/server_message_exception.dart';
 import 'package:paperless_mobile/core/factory/paperless_api_factory.dart';
 import 'package:paperless_mobile/core/factory/paperless_api_factory_impl.dart';
 import 'package:paperless_mobile/core/interceptor/language_header.interceptor.dart';
+import 'package:paperless_mobile/core/notifier/document_changed_notifier.dart';
+import 'package:paperless_mobile/core/security/session_manager.dart';
 import 'package:paperless_mobile/core/security/session_manager_impl.dart';
+import 'package:paperless_mobile/core/service/connectivity_status_service.dart';
+import 'package:paperless_mobile/core/service/file_service.dart';
 import 'package:paperless_mobile/features/logging/data/formatted_printer.dart';
 import 'package:paperless_mobile/features/logging/data/logger.dart';
 import 'package:paperless_mobile/features/logging/data/mirrored_file_output.dart';
-import 'package:paperless_mobile/core/notifier/document_changed_notifier.dart';
-import 'package:paperless_mobile/core/security/session_manager.dart';
-import 'package:paperless_mobile/core/service/connectivity_status_service.dart';
-import 'package:paperless_mobile/core/service/file_service.dart';
 import 'package:paperless_mobile/features/login/cubit/authentication_cubit.dart';
 import 'package:paperless_mobile/features/login/services/authentication_service.dart';
 import 'package:paperless_mobile/features/notifications/services/local_notification_service.dart';
 import 'package:paperless_mobile/features/settings/view/widgets/global_settings_builder.dart';
+import 'package:paperless_mobile/features/toast/service/toast_service.dart';
+import 'package:paperless_mobile/features/toast/service/toast_service_impl.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
+import 'package:paperless_mobile/helpers/message_helpers.dart';
 import 'package:paperless_mobile/routing/extra_codec.dart';
 import 'package:paperless_mobile/routing/navigation_keys.dart';
-import 'package:paperless_mobile/routing/routes/landing_route.dart';
-import 'package:paperless_mobile/routing/routes/shells/authenticated_route.dart';
 import 'package:paperless_mobile/routing/routes/add_account_route.dart';
 import 'package:paperless_mobile/routing/routes/app_logs_route.dart';
 import 'package:paperless_mobile/routing/routes/changelog_route.dart';
+import 'package:paperless_mobile/routing/routes/landing_route.dart';
 import 'package:paperless_mobile/routing/routes/logging_out_route.dart';
 import 'package:paperless_mobile/routing/routes/login_route.dart';
+import 'package:paperless_mobile/routing/routes/preview_route.dart';
+import 'package:paperless_mobile/routing/routes/shells/authenticated_route.dart';
 import 'package:paperless_mobile/theme.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -196,17 +198,26 @@ void main() async {
       return;
     }
     // Catches all unexpected/uncaught errors and prints them to the console.
-    final message = switch (error) {
-      PaperlessApiException e => e.details ?? error.toString(),
-      ServerMessageException e => e.message,
-      _ => null
-    };
-    logger.fe(
-      "An unexpected error occurred ${message != null ? "- $message" : ""}",
-      error: message == null ? error : null,
-      methodName: "main",
-      stackTrace: stackTrace,
-    );
+    final context = rootNavigatorKey.currentContext;
+    if (context != null) {
+      switch (error) {
+        case PaperlessApiException():
+          showErrorMessage(context, error);
+          break;
+        case ServerMessageException():
+          showGenericError(context, error);
+          break;
+        default:
+      }
+    } else {
+      logger.fe(
+        "An unknown error occurred.",
+        className: "main.dart",
+        methodName: "main",
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   });
 }
 
@@ -300,47 +311,49 @@ class _GoRouterShellState extends State<GoRouterShell> {
       ShellRoute(
         pageBuilder: (context, state, child) {
           return accessiblePlatformPage(
-            child: Provider.value(
-              value: widget.apiFactory,
-              child: BlocListener<AuthenticationCubit, AuthenticationState>(
-                listener: (context, state) {
-                  switch (state) {
-                    case UnauthenticatedState(
-                        redirectToAccountSelection: var shouldRedirect
-                      ):
-                      if (shouldRedirect) {
-                        const LoginToExistingAccountRoute().go(context);
-                      } else {
-                        const LoginRoute().go(context);
-                      }
-                      break;
-                    case RestoringSessionState():
-                      const RestoringSessionRoute().go(context);
-                      break;
-                    case VerifyIdentityState(userId: var userId):
-                      VerifyIdentityRoute(userId: userId).go(context);
-                      break;
-                    case SwitchingAccountsState():
-                      const SwitchingAccountsRoute().push(context);
-                      break;
-                    case AuthenticatedState():
-                      const LandingRoute().go(context);
-                      break;
-                    case AuthenticatingState state:
-                      AuthenticatingRoute(state.currentStage.name)
-                          .push(context);
-                      break;
-                    case LoggingOutState():
-                      const LoggingOutRoute().go(context);
-                      break;
-                    case AuthenticationErrorState():
-                      if (context.canPop()) {
-                        context.pop();
-                      }
-                      break;
-                  }
-                },
-                child: child,
+            child: Scaffold(
+              body: Provider.value(
+                value: widget.apiFactory,
+                child: BlocListener<AuthenticationCubit, AuthenticationState>(
+                  listener: (context, state) {
+                    switch (state) {
+                      case UnauthenticatedState(
+                          redirectToAccountSelection: var shouldRedirect
+                        ):
+                        if (shouldRedirect) {
+                          const LoginToExistingAccountRoute().go(context);
+                        } else {
+                          const LoginRoute().go(context);
+                        }
+                        break;
+                      case RestoringSessionState():
+                        const RestoringSessionRoute().go(context);
+                        break;
+                      case VerifyIdentityState(userId: var userId):
+                        VerifyIdentityRoute(userId: userId).go(context);
+                        break;
+                      case SwitchingAccountsState():
+                        const SwitchingAccountsRoute().push(context);
+                        break;
+                      case AuthenticatedState():
+                        const LandingRoute().go(context);
+                        break;
+                      case AuthenticatingState state:
+                        AuthenticatingRoute(state.currentStage.name)
+                            .push(context);
+                        break;
+                      case LoggingOutState():
+                        const LoggingOutRoute().go(context);
+                        break;
+                      case AuthenticationErrorState():
+                        if (context.canPop()) {
+                          context.pop();
+                        }
+                        break;
+                    }
+                  },
+                  child: child,
+                ),
               ),
             ),
           );
@@ -352,6 +365,7 @@ class _GoRouterShellState extends State<GoRouterShell> {
           $addAccountRoute,
           $changelogRoute,
           $appLogsRoute,
+          $previewRoute,
           $authenticatedRoute,
         ],
       ),

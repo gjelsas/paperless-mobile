@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:hive/hive.dart';
-import 'package:paperless_api/config/hive/hive_type_ids.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 part 'tags_query.g.dart';
 
@@ -8,9 +7,24 @@ sealed class TagsQuery with EquatableMixin {
   const TagsQuery();
   Map<String, String> toQueryParameter();
   bool matches(Iterable<int> ids);
+
+  Map<String, dynamic> toJson();
+
+  factory TagsQuery.fromJson(Map<String, dynamic> json) {
+    final type = json['_type'] as String;
+    switch (type) {
+      case 'NotAssignedTagsQuery':
+        return const NotAssignedTagsQuery();
+      case 'AnyAssignedTagsQuery':
+        return AnyAssignedTagsQuery.fromJson(json);
+      case 'IdsTagsQuery':
+        return IdsTagsQuery.fromJson(json);
+      default:
+        throw ArgumentError.value(type, 'type', 'Unknown type');
+    }
+  }
 }
 
-// @HiveType(typeId: PaperlessApiHiveTypeIds.notAssignedTagsQuery)
 class NotAssignedTagsQuery extends TagsQuery {
   const NotAssignedTagsQuery();
   @override
@@ -23,14 +37,16 @@ class NotAssignedTagsQuery extends TagsQuery {
 
   @override
   List<Object?> get props => [];
+
+  @override
+  Map<String, dynamic> toJson() => {'_type': runtimeType};
 }
 
-@HiveType(typeId: PaperlessApiHiveTypeIds.anyAssignedTagsQuery)
+@JsonSerializable()
 class AnyAssignedTagsQuery extends TagsQuery {
-  @HiveField(0)
-  final List<int> tagIds;
+  final Set<int> tagIds;
   const AnyAssignedTagsQuery({
-    this.tagIds = const [],
+    this.tagIds = const {},
   });
 
   @override
@@ -45,7 +61,7 @@ class AnyAssignedTagsQuery extends TagsQuery {
   bool matches(Iterable<int> ids) => ids.isNotEmpty;
 
   AnyAssignedTagsQuery copyWith({
-    List<int>? tagIds,
+    Set<int>? tagIds,
   }) {
     return AnyAssignedTagsQuery(
       tagIds: tagIds ?? this.tagIds,
@@ -54,18 +70,27 @@ class AnyAssignedTagsQuery extends TagsQuery {
 
   @override
   List<Object?> get props => [tagIds];
+
+  factory AnyAssignedTagsQuery.fromJson(Map<String, dynamic> json) =>
+      _$AnyAssignedTagsQueryFromJson(json);
+
+  @override
+  Map<String, dynamic> toJson() => {
+        ..._$AnyAssignedTagsQueryToJson(this),
+        '_type': runtimeType.toString(),
+      };
 }
 
-@HiveType(typeId: PaperlessApiHiveTypeIds.idsTagsQuery)
+@JsonSerializable()
 class IdsTagsQuery extends TagsQuery {
-  @HiveField(0)
-  final List<int> include;
-  @HiveField(1)
-  final List<int> exclude;
+  final Set<int> include;
+  final Set<int> exclude;
+
   const IdsTagsQuery({
-    this.include = const [],
-    this.exclude = const [],
+    this.include = const {},
+    this.exclude = const {},
   });
+
   @override
   Map<String, String> toQueryParameter() {
     final Map<String, String> params = {};
@@ -85,8 +110,8 @@ class IdsTagsQuery extends TagsQuery {
   }
 
   IdsTagsQuery copyWith({
-    List<int>? include,
-    List<int>? exclude,
+    Set<int>? include,
+    Set<int>? exclude,
   }) {
     return IdsTagsQuery(
       include: include ?? this.include,
@@ -96,32 +121,12 @@ class IdsTagsQuery extends TagsQuery {
 
   @override
   List<Object?> get props => [include, exclude];
-}
-
-/// Custom adapters
-
-class NotAssignedTagsQueryAdapter extends TypeAdapter<NotAssignedTagsQuery> {
-  @override
-  final int typeId = PaperlessApiHiveTypeIds.notAssignedTagsQuery;
+  factory IdsTagsQuery.fromJson(Map<String, dynamic> json) =>
+      _$IdsTagsQueryFromJson(json);
 
   @override
-  NotAssignedTagsQuery read(BinaryReader reader) {
-    reader.readByte();
-    return const NotAssignedTagsQuery();
-  }
-
-  @override
-  void write(BinaryWriter writer, NotAssignedTagsQuery obj) {
-    writer.writeByte(0);
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is NotAssignedTagsQueryAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
+  Map<String, dynamic> toJson() => {
+        ..._$IdsTagsQueryToJson(this),
+        '_type': runtimeType.toString(),
+      };
 }

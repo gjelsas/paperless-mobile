@@ -41,27 +41,36 @@ class MultiLabelFilterSelectionFormBuilderField<T extends Label>
     required this.labelText,
   });
 
-  static Widget _defaultOptionsBuilder(
-    BuildContext context,
-    Label label,
-    VoidCallback onSelected,
-    bool include,
-    bool exclude,
-  ) {
+  static Widget _defaultOptionsBuilder({
+    required BuildContext context,
+    required Label label,
+    required VoidCallback onSelected,
+    required SetIdQueryParameterType type,
+    required bool selected,
+  }) {
     final documentCountText =
         S.of(context)!.documentsAssigned(label.documentCount ?? 0);
 
-    final trailing = !(include || exclude)
-        ? Text(
+    final trailingIcon = switch (type) {
+      SetIdQueryParameterType.include => Icon(Icons.check),
+      SetIdQueryParameterType.exclude => Icon(Icons.clear),
+    };
+    final defaultTrailing = selected
+        ? trailingIcon
+        : Text(
             documentCountText,
-            style: Theme.of(context).textTheme.labelMedium,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: label.documentCount == 0
+                      ? Theme.of(context).disabledColor
+                      : null,
+                ),
             textAlign: TextAlign.end,
-          )
-        : Icon(include ? Icons.check : Icons.clear);
+          );
+
     return ListTile(
       enabled: label.documentCount != 0,
       title: Text(label.name),
-      trailing: trailing,
+      trailing: defaultTrailing,
       onTap: onSelected,
     );
   }
@@ -69,8 +78,14 @@ class MultiLabelFilterSelectionFormBuilderField<T extends Label>
   static Widget _defaultDisplayOptionBuilder(
     BuildContext context,
     Label label,
+    VoidCallback onDelete,
   ) {
-    return Chip(label: Text(label.name));
+    return Chip(
+      padding: EdgeInsets.zero,
+      label: Text(label.name),
+      onDeleted: onDelete,
+      deleteIcon: const Icon(Icons.clear),
+    );
   }
 
   @override
@@ -118,17 +133,21 @@ class MultiLabelFilterSelectionFormBuilderField<T extends Label>
                     UnsetIdQueryParameter() => null,
                     NotAssignedIdQueryParameter() =>
                       Text(S.of(context)!.notAssigned),
-                    AnyAssignedIdQueryParameter() =>
-                      Text(S.of(context)!.anyAssigned),
-                    SetIdQueryParameter(includeIds: var ids) =>
+                    SetIdQueryParameter(ids: final includeIds) =>
                       displayOptionBuilder(
-                        context,
-                        options[ids.elementAt(index)]!,
-                      ),
+                          context, options[includeIds.elementAt(index)]!, () {
+                        field.didChange(
+                          SetIdQueryParameter(
+                            ids: includeIds
+                                .toggle(includeIds.elementAt(index))
+                                .toSet(),
+                          ),
+                        );
+                      }),
                     null => null,
                   },
                   itemCount: switch (field.value) {
-                    SetIdQueryParameter(includeIds: var ids) => ids.length,
+                    SetIdQueryParameter(ids: var ids) => ids.length,
                     _ => 0,
                   },
                 ),
@@ -242,43 +261,91 @@ class __FullScreenMultiLabelFilterSelectionState
               ),
             );
           }
-          return ListView.builder(
-            itemBuilder: (context, index) {
-              final option = filteredOptions.elementAt(index);
-              final includeIds = switch (_selection) {
-                SetIdQueryParameter(includeIds: var includeIds) => includeIds,
-                _ => <int>[],
-              };
-              final excludeIds = switch (_selection) {
-                SetIdQueryParameter(excludeIds: var excludeIds) => excludeIds,
-                _ => <int>[],
-              };
-              return widget.optionBuilder(
-                context,
-                option,
-                () {
-                  if (!includeIds.contains(option.id) &&
-                      !excludeIds.contains(option.id)) {
-                    setState(() {
-                      _selection = SetIdQueryParameter(
-                        includeIds: [...includeIds, option.id!],
-                        excludeIds: excludeIds,
-                      );
-                    });
-                  } else {
-                    setState(() {
-                      _selection = SetIdQueryParameter(
-                        includeIds: includeIds.toggle(option.id!),
-                        excludeIds: excludeIds.toggle(option.id!),
-                      );
-                    });
-                  }
+          final typeSelectionEnabled = _selection is SetIdQueryParameter;
+          return CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                sliver: SliverToBoxAdapter(
+                  child: SegmentedButton<SetIdQueryParameterType>(
+                    segments: [
+                      ButtonSegment(
+                        enabled: typeSelectionEnabled,
+                        value: SetIdQueryParameterType.include,
+                        label: Text("Include"), //TODO: INTL
+                      ),
+                      ButtonSegment(
+                        enabled: typeSelectionEnabled,
+                        value: SetIdQueryParameterType.exclude,
+                        label: Text("Exclude"), //TODO: INTL
+                      ),
+                    ],
+                    selected: switch (_selection) {
+                      SetIdQueryParameter(:final type) => {type},
+                      _ => {SetIdQueryParameterType.include},
+                    },
+                    multiSelectionEnabled: false,
+                    onSelectionChanged: (value) {
+                      setState(() {
+                        _selection = switch (_selection) {
+                          SetIdQueryParameter(:final ids) =>
+                            SetIdQueryParameter(
+                              ids: ids,
+                              type: value.single,
+                            ),
+                          _ => throw AssertionError(
+                              "Cannot include or exclude for types other than SetIdQueryParameter."),
+                        };
+                      });
+                    },
+                  ),
+                ),
+              ),
+              SliverList.builder(
+                itemBuilder: (context, index) {
+                  final option = filteredOptions.elementAt(index);
+                  final isSelected = switch (_selection) {
+                    SetIdQueryParameter(:final ids) => ids.contains(option.id),
+                    _ => false,
+                  };
+                  final type = switch (_selection) {
+                    SetIdQueryParameter(:final type) => type,
+                    _ => SetIdQueryParameterType.include,
+                  };
+                  return widget.optionBuilder(
+                    context: context,
+                    label: option,
+                    onSelected: () {
+                      switch (_selection) {
+                        case SetIdQueryParameter(:final ids, :final type):
+                          final updatedIds = ids.toggle(option.id!).toSet();
+                          if (updatedIds.isEmpty) {
+                            setState(() {
+                              _selection = const UnsetIdQueryParameter();
+                            });
+                          } else {
+                            setState(() {
+                              _selection = SetIdQueryParameter(
+                                ids: updatedIds,
+                                type: type,
+                              );
+                            });
+                          }
+                          break;
+                        default:
+                          setState(() {
+                            _selection = SetIdQueryParameter(ids: {option.id!});
+                          });
+                          break;
+                      }
+                    },
+                    selected: isSelected,
+                    type: type,
+                  );
                 },
-                includeIds.contains(option.id),
-                excludeIds.contains(option.id),
-              );
-            },
-            itemCount: filteredOptions.length,
+                itemCount: filteredOptions.length,
+              ),
+            ],
           );
         },
       ),

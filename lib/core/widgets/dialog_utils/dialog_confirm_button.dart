@@ -26,39 +26,27 @@ class DialogConfirmButton<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _normalStyle = ButtonStyle(
-      backgroundColor: MaterialStatePropertyAll(
-        Theme.of(context).colorScheme.primaryContainer,
-      ),
-      foregroundColor: MaterialStatePropertyAll(
-        Theme.of(context).colorScheme.onPrimaryContainer,
-      ),
-    );
-    final _dangerStyle = ButtonStyle(
-      backgroundColor: MaterialStatePropertyAll(
-        Theme.of(context).colorScheme.errorContainer,
-      ),
-      foregroundColor: MaterialStatePropertyAll(
-        Theme.of(context).colorScheme.onErrorContainer,
-      ),
-    );
-
-    late final ButtonStyle _style;
-    switch (style) {
-      case DialogConfirmButtonStyle.normal:
-        _style = _normalStyle;
-        break;
-      case DialogConfirmButtonStyle.danger:
-        _style = _dangerStyle;
-        break;
-    }
-
     final effectiveOnPressed =
         onPressed ?? () => Navigator.of(context).pop(returnValue ?? true);
-    return ElevatedButton(
-      child: Text(label ?? S.of(context)!.confirm),
-      style: _style,
+    return FilledButton(
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.all(switch (style) {
+          DialogConfirmButtonStyle.normal =>
+            Theme.of(context).colorScheme.primaryContainer,
+          DialogConfirmButtonStyle.danger =>
+            Theme.of(context).colorScheme.error,
+        }),
+      ),
       onPressed: effectiveOnPressed,
+      child: Text(label ?? S.of(context)!.confirm,
+          style: switch (style) {
+            DialogConfirmButtonStyle.normal => TextStyle(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            DialogConfirmButtonStyle.danger => TextStyle(
+                color: Theme.of(context).colorScheme.onError,
+              ),
+          }),
     );
   }
 }

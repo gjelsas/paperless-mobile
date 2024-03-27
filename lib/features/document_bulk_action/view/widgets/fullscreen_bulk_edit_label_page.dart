@@ -123,10 +123,11 @@ class _FullscreenBulkEditLabelPageState<T extends Label>
   }
 
   void _onSubmit() async {
+    final router = GoRouter.of(context);
     if (_selection == null) {
-      context.pop();
+      router.pop();
     } else {
-      bool shouldPerformAction;
+      final bool shouldPerformAction;
       if (_selection!.label == null) {
         shouldPerformAction = await showDialog<bool>(
               context: context,
@@ -150,7 +151,7 @@ class _FullscreenBulkEditLabelPageState<T extends Label>
       }
       if (shouldPerformAction) {
         widget.onSubmit(_selection!.label);
-        context.pop();
+        router.pop();
       }
     }
   }

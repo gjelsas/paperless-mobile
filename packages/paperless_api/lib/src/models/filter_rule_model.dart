@@ -71,19 +71,19 @@ class FilterRule with EquatableMixin {
         return filter.copyWith(
           documentTypes: value == null
               ? const NotAssignedIdQueryParameter()
-              : SetIdQueryParameter(includeIds: [int.parse(value!)]),
+              : SetIdQueryParameter(ids: {int.parse(value!)}),
         );
       case correspondentRule:
         return filter.copyWith(
           correspondents: value == null
               ? const NotAssignedIdQueryParameter()
-              : SetIdQueryParameter(includeIds: [int.parse(value!)]),
+              : SetIdQueryParameter(ids: {int.parse(value!)}),
         );
       case storagePathRule:
         return filter.copyWith(
           storagePaths: value == null
               ? const NotAssignedIdQueryParameter()
-              : SetIdQueryParameter(includeIds: [int.parse(value!)]),
+              : SetIdQueryParameter(ids: {int.parse(value!)}),
         );
       case hasAnyTag:
         return filter.copyWith(
@@ -96,7 +96,7 @@ class FilterRule with EquatableMixin {
         return filter.copyWith(
           tags: switch (filter.tags) {
             IdsTagsQuery(include: var i, exclude: var e) => IdsTagsQuery(
-                include: [...i, int.parse(value!)],
+                include: {...i, int.parse(value!)},
                 exclude: e,
               ),
             _ => filter.tags,
@@ -108,7 +108,7 @@ class FilterRule with EquatableMixin {
           tags: switch (filter.tags) {
             IdsTagsQuery(include: var i, exclude: var e) => IdsTagsQuery(
                 include: i,
-                exclude: [...e, int.parse(value!)],
+                exclude: {...e, int.parse(value!)},
               ),
             _ => filter.tags,
           },
@@ -258,7 +258,7 @@ class FilterRule with EquatableMixin {
     List<FilterRule> filterRules = [];
     final corrRule = switch (filter.correspondents) {
       NotAssignedIdQueryParameter() => FilterRule(correspondentRule, null),
-      SetIdQueryParameter(includeIds: var id) =>
+      SetIdQueryParameter(ids: var id) =>
         FilterRule(correspondentRule, id.toString()),
       _ => null,
     };
@@ -268,7 +268,7 @@ class FilterRule with EquatableMixin {
 
     final docTypeRule = switch (filter.documentTypes) {
       NotAssignedIdQueryParameter() => FilterRule(documentTypeRule, null),
-      SetIdQueryParameter(includeIds: var id) =>
+      SetIdQueryParameter(ids: var id) =>
         FilterRule(documentTypeRule, id.toString()),
       _ => null,
     };
@@ -279,7 +279,7 @@ class FilterRule with EquatableMixin {
 
     final sPathRule = switch (filter.storagePaths) {
       NotAssignedIdQueryParameter() => FilterRule(storagePathRule, null),
-      SetIdQueryParameter(includeIds: var id) =>
+      SetIdQueryParameter(ids: var id) =>
         FilterRule(storagePathRule, id.toString()),
       _ => null,
     };

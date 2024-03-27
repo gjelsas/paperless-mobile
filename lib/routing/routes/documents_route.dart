@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:paperless_api/paperless_api.dart';
@@ -9,13 +8,13 @@ import 'package:paperless_mobile/features/document_bulk_action/view/widgets/full
 import 'package:paperless_mobile/features/document_bulk_action/view/widgets/fullscreen_bulk_edit_tags_widget.dart';
 import 'package:paperless_mobile/features/document_details/cubit/document_details_cubit.dart';
 import 'package:paperless_mobile/features/document_details/view/pages/document_details_page.dart';
-import 'package:paperless_mobile/features/document_edit/cubit/document_edit_cubit.dart';
-import 'package:paperless_mobile/features/document_edit/view/document_edit_page.dart';
-import 'package:paperless_mobile/features/documents/view/pages/document_view.dart';
+import 'package:paperless_mobile/features/document_viewer/cubit/document_viewer_cubit.dart';
+import 'package:paperless_mobile/features/document_viewer/view/document_viewer.dart';
+import 'package:paperless_mobile/features/documents/cubit/documents_cubit.dart';
 import 'package:paperless_mobile/features/documents/view/pages/documents_page.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/routing/navigation_keys.dart';
-import 'package:paperless_mobile/theme.dart';
+import 'package:provider/provider.dart';
 
 class DocumentsBranch extends StatefulShellBranchData {
   static final GlobalKey<NavigatorState> $navigatorKey = documentsNavigatorKey;
@@ -53,6 +52,7 @@ class DocumentDetailsRoute extends GoRouteData {
       create: (_) => DocumentDetailsCubit(
         context.read(),
         context.read(),
+        context.read(),
         id: id,
       )..initialize(),
       lazy: false,
@@ -67,56 +67,31 @@ class DocumentDetailsRoute extends GoRouteData {
   }
 }
 
-class EditDocumentRoute extends GoRouteData {
-  static final GlobalKey<NavigatorState> $parentNavigatorKey =
-      outerShellNavigatorKey;
-
-  final DocumentModel $extra;
-
-  const EditDocumentRoute(this.$extra);
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    final theme = Theme.of(context);
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: buildOverlayStyle(
-        theme,
-        systemNavigationBarColor: theme.colorScheme.background,
-      ),
-      child: BlocProvider(
-        create: (context) => DocumentEditCubit(
-          context.read(),
-          context.read(),
-          context.read(),
-          document: $extra,
-        )..loadFieldSuggestions(),
-        child: const DocumentEditPage(),
-      ),
-    );
-  }
-}
-
-class DocumentPreviewRoute extends GoRouteData {
+class DocumentViewerRoute extends GoRouteData {
   static final GlobalKey<NavigatorState> $parentNavigatorKey =
       outerShellNavigatorKey;
   final int id;
   final String? title;
+  final Axis scrollDirection;
+  final bool isFullscreen;
 
-  const DocumentPreviewRoute({
+  const DocumentViewerRoute({
     required this.id,
     this.title,
+    this.scrollDirection = Axis.vertical,
+    required this.isFullscreen,
   });
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    return DocumentView(
-      bytes: context.read<PaperlessDocumentsApi>().downloadDocument(id),
-      title: title,
+    return Provider(
+      create: (context) => DocumentViewerCubit(context.read())..initialize(id),
+      child: DocumentViewer(
+        title: title,
+        scrollDirection: scrollDirection,
+        isFullscreen: isFullscreen,
+      ),
     );
-    // return DocumentView(
-    //   documentBytes: context.read<PaperlessDocumentsApi>().downloadDocument(id),
-    //   title: title,
-    // );
   }
 }
 
@@ -169,17 +144,22 @@ class BulkEditDocumentsRoute extends GoRouteData {
                   _ => throw Exception("Parameter not allowed here."),
                 },
                 hintText: S.of(context)!.startTyping,
-                onSubmit: switch ($extra.type) {
-                  LabelType.correspondent => context
-                      .read<DocumentBulkActionCubit>()
-                      .bulkModifyCorrespondent,
-                  LabelType.documentType => context
-                      .read<DocumentBulkActionCubit>()
-                      .bulkModifyDocumentType,
-                  LabelType.storagePath => context
-                      .read<DocumentBulkActionCubit>()
-                      .bulkModifyStoragePath,
-                  _ => throw Exception("Parameter not allowed here."),
+                onSubmit: (value) async {
+                  final documentsCubit = context.read<DocumentsCubit>();
+                  final callback = switch ($extra.type) {
+                    LabelType.correspondent => context
+                        .read<DocumentBulkActionCubit>()
+                        .bulkModifyCorrespondent,
+                    LabelType.documentType => context
+                        .read<DocumentBulkActionCubit>()
+                        .bulkModifyDocumentType,
+                    LabelType.storagePath => context
+                        .read<DocumentBulkActionCubit>()
+                        .bulkModifyStoragePath,
+                    _ => throw Exception("Parameter not allowed here."),
+                  };
+                  await callback(value);
+                  await documentsCubit.reload();
                 },
                 assignMessageBuilder: (int count, String name) {
                   return switch ($extra.type) {

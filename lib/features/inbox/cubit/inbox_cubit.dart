@@ -99,13 +99,13 @@ class InboxCubit extends HydratedCubit<InboxState>
   ///
   Future<void> loadInbox() async {
     if (!isClosed) {
-      final inboxTags = await _labelRepository.findAllTags().then(
+      final inboxTags = await _labelRepository.findAll<Tag>().then(
             (tags) => tags.where((t) => t.isInboxTag).map((t) => t.id!),
           );
 
       if (inboxTags.isEmpty) {
         // no inbox tags = no inbox items.
-        return emit( 
+        return emit(
           state.copyWith(
             hasLoaded: true,
             value: [],
@@ -119,7 +119,7 @@ class InboxCubit extends HydratedCubit<InboxState>
         updateFilter(
           filter: DocumentFilter(
             sortField: SortField.added,
-            tags: IdsTagsQuery(include: inboxTags.toList()),
+            tags: IdsTagsQuery(include: inboxTags.toSet()),
           ),
         );
       }
@@ -142,7 +142,7 @@ class InboxCubit extends HydratedCubit<InboxState>
   /// Fetches inbox tag ids and loads the inbox items (documents).
   ///
   Future<void> reloadInbox() async {
-    final inboxTags = await _labelRepository.findAllTags().then(
+    final inboxTags = await _labelRepository.findAll<Tag>().then(
           (tags) => tags.where((t) => t.isInboxTag).map((t) => t.id!),
         );
 
@@ -158,10 +158,10 @@ class InboxCubit extends HydratedCubit<InboxState>
     }
     emit(state.copyWith(inboxTags: inboxTags));
     updateFilter(
-      emitLoading: false,
+      seamless: false,
       filter: DocumentFilter(
         sortField: SortField.added,
-        tags: IdsTagsQuery(include: inboxTags.toList()),
+        tags: IdsTagsQuery(include: inboxTags.toSet()),
       ),
     );
   }

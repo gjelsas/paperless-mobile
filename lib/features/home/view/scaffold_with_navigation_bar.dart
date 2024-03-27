@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_adaptive_scaffold/flutter_adaptive_scaffold.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/features/app_drawer/view/app_drawer.dart';
 import 'package:paperless_mobile/features/inbox/cubit/inbox_cubit.dart';
+import 'package:paperless_mobile/features/toast/service/toast_service_impl.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/theme.dart';
+import 'package:provider/provider.dart';
 
 class ScaffoldWithNavigationBar extends StatefulWidget {
   final UserModel authenticatedUser;
@@ -28,95 +31,168 @@ class ScaffoldWithNavigationBarState extends State<ScaffoldWithNavigationBar> {
     final theme = Theme.of(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: buildOverlayStyle(theme),
-      child: Scaffold(
-        drawer: const AppDrawer(),
-        bottomNavigationBar: NavigationBar(
-          elevation: 3,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          selectedIndex: widget.navigationShell.currentIndex,
-          onDestinationSelected: (index) {
-            widget.navigationShell.goBranch(
-              index,
-              initialLocation: index == widget.navigationShell.currentIndex,
-            );
-          },
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: Icon(
-                Icons.home,
-                color: theme.colorScheme.primary,
-              ),
-              label: S.of(context)!.home,
+      child: AdaptiveScaffold(
+        internalAnimations: true,
+        onSelectedIndexChange: (index) {
+          widget.navigationShell.goBranch(
+            index,
+            initialLocation: index == widget.navigationShell.currentIndex,
+          );
+        },
+        selectedIndex: widget.navigationShell.currentIndex,
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: Icon(
+              Icons.home,
+              color: theme.colorScheme.primary,
             ),
-            _toggleDestination(
-              NavigationDestination(
-                icon: const Icon(Icons.description_outlined),
-                selectedIcon: Icon(
-                  Icons.description,
-                  color: theme.colorScheme.primary,
-                ),
-                label: S.of(context)!.documents,
-              ),
-              disableWhen: !widget.authenticatedUser.canViewDocuments,
+            label: S.of(context)!.home,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.description_outlined),
+            selectedIcon: Icon(
+              Icons.description,
+              color: theme.colorScheme.primary,
             ),
-            _toggleDestination(
-              NavigationDestination(
-                icon: const Icon(Icons.document_scanner_outlined),
-                selectedIcon: Icon(
-                  Icons.document_scanner,
-                  color: theme.colorScheme.primary,
-                ),
-                label: S.of(context)!.scanner,
-              ),
-              disableWhen: !widget.authenticatedUser.canCreateDocuments,
+            label: S.of(context)!.documents,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.document_scanner_outlined),
+            selectedIcon: Icon(
+              Icons.document_scanner,
+              color: theme.colorScheme.primary,
             ),
-            _toggleDestination(
-              NavigationDestination(
-                icon: const Icon(Icons.sell_outlined),
-                selectedIcon: Icon(
-                  Icons.sell,
-                  color: theme.colorScheme.primary,
-                ),
-                label: S.of(context)!.labels,
-              ),
-              disableWhen: !widget.authenticatedUser.canViewAnyLabel,
+            label: S.of(context)!.scanner,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.sell_outlined),
+            selectedIcon: Icon(
+              Icons.sell,
+              color: theme.colorScheme.primary,
             ),
-            _toggleDestination(
-              NavigationDestination(
-                icon: Builder(
-                  builder: (context) {
-                    return BlocBuilder<InboxCubit, InboxState>(
-                      builder: (context, state) {
-                        return Badge.count(
-                          isLabelVisible: state.itemsInInboxCount > 0,
-                          count: state.itemsInInboxCount,
-                          child: const Icon(Icons.inbox_outlined),
-                        );
-                      },
-                    );
-                  },
-                ),
-                selectedIcon: BlocBuilder<InboxCubit, InboxState>(
+            label: S.of(context)!.labels,
+          ),
+          NavigationDestination(
+            icon: Builder(
+              builder: (context) {
+                return BlocBuilder<InboxCubit, InboxState>(
                   builder: (context, state) {
                     return Badge.count(
-                      isLabelVisible: state.itemsInInboxCount > 0 &&
-                          widget.authenticatedUser.canViewInbox,
+                      isLabelVisible: state.itemsInInboxCount > 0,
                       count: state.itemsInInboxCount,
-                      child: Icon(
-                        Icons.inbox,
-                        color: theme.colorScheme.primary,
-                      ),
+                      child: const Icon(Icons.inbox_outlined),
                     );
                   },
-                ),
-                label: S.of(context)!.inbox,
-              ),
-              disableWhen: !widget.authenticatedUser.canViewInbox,
+                );
+              },
             ),
-          ],
-        ),
-        body: widget.navigationShell,
+            selectedIcon: BlocBuilder<InboxCubit, InboxState>(
+              builder: (context, state) {
+                return Badge.count(
+                  isLabelVisible: state.itemsInInboxCount > 0 &&
+                      widget.authenticatedUser.canViewInbox,
+                  count: state.itemsInInboxCount,
+                  child: Icon(
+                    Icons.inbox,
+                    color: theme.colorScheme.primary,
+                  ),
+                );
+              },
+            ),
+            label: S.of(context)!.inbox,
+          ),
+        ],
+
+        // bottomNavigationBar: NavigationBar(
+        //   elevation: 3,
+        //   backgroundColor: Theme.of(context).colorScheme.surface,
+        //   selectedIndex: widget.navigationShell.currentIndex,
+        //   onDestinationSelected: (index) {
+        //     widget.navigationShell.goBranch(
+        //       index,
+        //       initialLocation: index == widget.navigationShell.currentIndex,
+        //     );
+        //   },
+        //   destinations: [
+        //     NavigationDestination(
+        //       icon: const Icon(Icons.home_outlined),
+        //       selectedIcon: Icon(
+        //         Icons.home,
+        //         color: theme.colorScheme.primary,
+        //       ),
+        //       label: S.of(context)!.home,
+        //     ),
+        //     _toggleDestination(
+        //       NavigationDestination(
+        //         icon: const Icon(Icons.description_outlined),
+        //         selectedIcon: Icon(
+        //           Icons.description,
+        //           color: theme.colorScheme.primary,
+        //         ),
+        //         label: S.of(context)!.documents,
+        //       ),
+        //       disableWhen: !widget.authenticatedUser.canViewDocuments,
+        //     ),
+        //     _toggleDestination(
+        //       NavigationDestination(
+        //         icon: const Icon(Icons.document_scanner_outlined),
+        //         selectedIcon: Icon(
+        //           Icons.document_scanner,
+        //           color: theme.colorScheme.primary,
+        //         ),
+        //         label: S.of(context)!.scanner,
+        //       ),
+        //       disableWhen: !widget.authenticatedUser.canCreateDocuments,
+        //     ),
+        //     _toggleDestination(
+        //       NavigationDestination(
+        //         icon: const Icon(Icons.sell_outlined),
+        //         selectedIcon: Icon(
+        //           Icons.sell,
+        //           color: theme.colorScheme.primary,
+        //         ),
+        //         label: S.of(context)!.labels,
+        //       ),
+        //       disableWhen: !widget.authenticatedUser.canViewAnyLabel,
+        //     ),
+        //     _toggleDestination(
+        //       NavigationDestination(
+        //         icon: Builder(
+        //           builder: (context) {
+        //             return BlocBuilder<InboxCubit, InboxState>(
+        //               builder: (context, state) {
+        //                 return Badge.count(
+        //                   isLabelVisible: state.itemsInInboxCount > 0,
+        //                   count: state.itemsInInboxCount,
+        //                   child: const Icon(Icons.inbox_outlined),
+        //                 );
+        //               },
+        //             );
+        //           },
+        //         ),
+        //         selectedIcon: BlocBuilder<InboxCubit, InboxState>(
+        //           builder: (context, state) {
+        //             return Badge.count(
+        //               isLabelVisible: state.itemsInInboxCount > 0 &&
+        //                   widget.authenticatedUser.canViewInbox,
+        //               count: state.itemsInInboxCount,
+        //               child: Icon(
+        //                 Icons.inbox,
+        //                 color: theme.colorScheme.primary,
+        //               ),
+        //             );
+        //           },
+        //         ),
+        //         label: S.of(context)!.inbox,
+        //       ),
+        //       disableWhen: !widget.authenticatedUser.canViewInbox,
+        //     ),
+        //   ],
+        // ),
+        body: (context) {
+          return widget.navigationShell;
+        },
       ),
     );
   }

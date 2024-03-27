@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/bloc/base_state.dart';
 import 'package:paperless_mobile/core/bloc/loading_status.dart';
 import 'package:paperless_mobile/core/bloc/transient_error.dart';
+import 'package:paperless_mobile/core/repository/label_repository.dart';
 import 'package:paperless_mobile/core/service/file_service.dart';
 import 'package:paperless_mobile/features/logging/data/logger.dart';
 import 'package:paperless_mobile/features/notifications/services/local_notification_service.dart';
@@ -15,84 +16,94 @@ import 'package:path/path.dart' as p;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
+part 'document_details_cubit.freezed.dart';
 part 'document_details_state.dart';
 
 class DocumentDetailsCubit extends Cubit<DocumentDetailsState> {
   final int id;
   final PaperlessDocumentsApi _api;
+  final LabelRepository _labelRepository;
   final LocalNotificationService _notificationService;
 
   DocumentDetailsCubit(
     this._api,
-    this._notificationService, {
+    this._notificationService,
+    this._labelRepository, {
     required this.id,
   }) : super(const DocumentDetailsState());
 
   Future<void> initialize() async {
-    debugPrint("Initialize called");
+    logger.fd(
+      "Loading data for document $id...",
+      className: runtimeType.toString(),
+      methodName: "initialize",
+    );
     emit(const DocumentDetailsState(status: LoadingStatus.loading));
     try {
-      final (document, metaData) = await Future.wait([
+      final (document, metaData, nextAsn, fieldSuggestions) =
+          await Future.wait([
         _api.find(id),
         _api.getMetaData(id),
-      ]).then((value) => (
-            value[0] as DocumentModel,
-            value[1] as DocumentMetaData,
-          ));
-      // final document = await _api.find(id);
-      // final metaData = await _api.getMetaData(id);
-      debugPrint("Document data loaded for $id");
-      emit(DocumentDetailsState(
-        status: LoadingStatus.loaded,
-        data: DocumentDetailsData(
+        _api.findNextAsn(),
+        _api.findSuggestions(id),
+      ]).then(
+        (value) => (
+          value[0] as DocumentModel,
+          value[1] as DocumentMetaData,
+          value[2] as int,
+          value[3] as FieldSuggestions,
+        ),
+      );
+      logger.fd(
+        "Data successfully loaded for document $id.",
+        className: runtimeType.toString(),
+        methodName: "initialize",
+      );
+      emit(DocumentDetailsState.loaded(
+        DocumentDetailsData(
           document: document,
           metaData: metaData,
+          nextAsn: nextAsn,
+          fieldSuggestions: fieldSuggestions,
         ),
       ));
     } on PaperlessApiException catch (error, stackTrace) {
       logger.fe(
-        "An error occurred while loading data for document $id.",
+        "Could not load data for document $id.",
         className: runtimeType.toString(),
         methodName: 'initialize',
         error: error,
         stackTrace: stackTrace,
       );
-      emit(const DocumentDetailsState(status: LoadingStatus.error));
-      addError(
-        TransientPaperlessApiError(code: error.code, details: error.details),
-      );
+      emit(state.withError(error));
     }
   }
 
   Future<void> delete(DocumentModel document) async {
+    logger.fd(
+      "Deleting document ${document.id}...",
+      className: runtimeType.toString(),
+      methodName: "delete",
+    );
     try {
       await _api.delete(document);
-    } on PaperlessApiException catch (e) {
-      addError(
-        TransientPaperlessApiError(code: e.code, details: e.details),
+      logger.fd(
+        "Document ${document.id} successfully deleted.",
+        className: runtimeType.toString(),
+        methodName: "delete",
       );
-    }
-  }
-
-  Future<void> updateNote(NoteModel note) async {
-    assert(state.status == LoadingStatus.loaded);
-    final document = state.data!.document;
-    final updatedNotes = document.notes.map((e) => e.id == note.id ? note : e);
-    try {
-      final updatedDocument = await _api.update(
-        state.data!.document.copyWith(
-          notes: updatedNotes,
-        ),
+    } on PaperlessApiException catch (error, stackTrace) {
+      logger.fe(
+        "Could not delete document ${document.id}.",
+        className: runtimeType.toString(),
+        methodName: "delete",
+        error: error,
+        stackTrace: stackTrace,
       );
-      emit(state.copyWith(
-          data: state.data!.copyWith(
-        document: updatedDocument,
-      )));
-    } on PaperlessApiException catch (e) {
       addError(
         TransientPaperlessApiError(
-          code: e.code,
-          details: e.details,
+          code: error.code,
+          details: error.details,
         ),
       );
     }
@@ -103,48 +114,37 @@ class DocumentDetailsCubit extends Cubit<DocumentDetailsState> {
         "Document data has to be loaded before calling this method.");
     assert(note.id != null, "Note id cannot be null.");
     try {
+      logger.fd(
+        "Deleting note ${note.id}...",
+        className: runtimeType.toString(),
+        methodName: "deleteNote",
+      );
       final updatedDocument = await _api.deleteNote(
         state.data!.document,
         note.id!,
+      );
+      logger.fd(
+        "Note ${note.id} successfully deleted.",
+        className: runtimeType.toString(),
+        methodName: "deleteNote",
       );
       emit(state.copyWith(
           data: state.data!.copyWith(
         document: updatedDocument,
       )));
-    } on PaperlessApiException catch (e) {
+    } on PaperlessApiException catch (error, stackTrace) {
+      logger.fe(
+        "An error occurred while deleting note ${note.id}.",
+        className: runtimeType.toString(),
+        methodName: "deleteNote",
+        error: error,
+        stackTrace: stackTrace,
+      );
       addError(
         TransientPaperlessApiError(
-          code: e.code,
-          details: e.details,
+          code: error.code,
+          details: error.details,
         ),
-      );
-    }
-  }
-
-  Future<void> assignAsn(
-    DocumentModel document, {
-    int? asn,
-    bool autoAssign = false,
-  }) async {
-    try {
-      DocumentModel updatedDocument;
-      if (!autoAssign) {
-        updatedDocument = await _api.update(
-          document.copyWith(archiveSerialNumber: () => asn),
-        );
-      } else {
-        final int autoAsn = await _api.findNextAsn();
-        updatedDocument = await _api
-            .update(document.copyWith(archiveSerialNumber: () => autoAsn));
-      }
-      emit(
-        state.copyWith(
-          data: state.data!.copyWith(document: document),
-        ),
-      );
-    } on PaperlessApiException catch (e) {
-      addError(
-        TransientPaperlessApiError(code: e.code, details: e.details),
       );
     }
   }
@@ -164,9 +164,19 @@ class DocumentDetailsCubit extends Cubit<DocumentDetailsState> {
 
     if (!file.existsSync()) {
       file.createSync();
+      logger.ft(
+        "No local copy found, downloading document pdf for ${state.data!.document.id}...",
+        className: runtimeType.toString(),
+        methodName: "openDocumentInSystemViewer",
+      );
       await _api.downloadToFile(
         state.data!.document.id,
         file.path,
+      );
+      logger.ft(
+        "Pdf successfully downloaded for document ${state.data!.document.id}...",
+        className: runtimeType.toString(),
+        methodName: "openDocumentInSystemViewer",
       );
     }
     return OpenFilex.open(
@@ -210,7 +220,11 @@ class DocumentDetailsCubit extends Cubit<DocumentDetailsState> {
     //   locale: locale,
     //   userId: userId,
     // );
-
+    logger.fd(
+      "Downloading file of document ${state.data!.document.id}...",
+      className: runtimeType.toString(),
+      methodName: "downloadDocument",
+    );
     await _api.downloadToFile(
       state.data!.document.id,
       targetPath,
@@ -227,6 +241,11 @@ class DocumentDetailsCubit extends Cubit<DocumentDetailsState> {
         );
       },
     );
+    logger.fi(
+      "Document successfully downloaded to $targetPath.",
+      className: runtimeType.toString(),
+      methodName: "downloadDocument",
+    );
     await _notificationService.notifyDocumentDownload(
       document: state.data!.document,
       filename: p.basename(targetPath),
@@ -235,7 +254,6 @@ class DocumentDetailsCubit extends Cubit<DocumentDetailsState> {
       locale: locale,
       userId: userId,
     );
-    logger.fi("Document '${state.data!.document.title}' saved to $targetPath.");
   }
 
   Future<void> shareDocument({bool shareOriginal = false}) async {
@@ -312,6 +330,58 @@ class DocumentDetailsCubit extends Cubit<DocumentDetailsState> {
       )));
     } on PaperlessApiException catch (err) {
       addError(TransientPaperlessApiError(code: err.code));
+    }
+  }
+
+  Future<int> nextAsn() {
+    return _api.findNextAsn();
+  }
+
+  Future<void> updateDocument(DocumentModel document) async {
+    logger.fd(
+      "Updating document ${document.id}...",
+      className: runtimeType.toString(),
+      methodName: "updateDocument",
+    );
+    try {
+      final updatedDocument = await _api.update(document);
+      final (metadata, nextAsn, suggestions) = await Future.wait([
+        _api.getMetaData(id),
+        _api.findNextAsn(),
+        _api.findSuggestions(id),
+        _labelRepository.reload(),
+      ]).then((value) => (
+            value[0] as DocumentMetaData,
+            value[1] as int,
+            value[2] as FieldSuggestions,
+          ));
+      emit(state.copyWith(
+        data: DocumentDetailsData(
+          document: updatedDocument,
+          metaData: metadata,
+          nextAsn: nextAsn,
+          fieldSuggestions: suggestions,
+        ),
+      ));
+    } on PaperlessApiException catch (error, stackTrace) {
+      addError(
+          TransientPaperlessApiError(code: error.code, details: error.details));
+      logger.fe(
+        "An error occurred while updating document ${document.id}.",
+        className: runtimeType.toString(),
+        methodName: "updateDocument",
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } catch (error, stackTrace) {
+      addError(error);
+      logger.fe(
+        "An unexpected error occurred while updating document ${document.id}.",
+        className: runtimeType.toString(),
+        methodName: "updateDocument",
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 }

@@ -1,0 +1,1000 @@
+openapi: "3.0.2"
+info:
+  title: Paperless-ngx API Documentation
+  version: "v2.5.0"
+servers:
+  - url: http://192.168.178.20:8015/api
+    description: "Local development server"
+security:
+  - BasicAuth: []
+  - BearerAuth: []
+paths:
+  /ui_settings/:
+    get:
+      summary: "Retrieves the UI settings for the current user"
+      operationId: "getUISettings"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UISettings"
+        403:
+          description: "Unauthorized"
+  /correspondents/:
+    get:
+      summary: "Retrieves a paged list of all correspondents"
+      operationId: "getAllCorrespondents"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Correspondent"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+  /correspondents/{id}/:
+    get:
+      summary: "Retrieves a single correspondent by id"
+      operationId: "getCorrespondentById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Correspondent"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+
+  /storage_paths/:
+    get:
+      summary: "Retrieves a paged list of all storage paths"
+      operationId: "getAllStoragePaths"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StoragePath"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+  /storage_paths/{id}/:
+    get:
+      summary: "Retrieves a single storage path by id"
+      operationId: "getStoragePathById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoragePath"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+
+  /document_types/:
+    get:
+      summary: "Retrieves a paged list of all document types"
+      operationId: "getAllDocumentTypes"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DocumentType"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+  /document_types/{id}/:
+    get:
+      summary: "Retrieves a single document type by id"
+      operationId: "getDocumentTypeById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentType"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+
+  /tags/:
+    get:
+      summary: "Retrieves a paged list of all tags"
+      operationId: "getAllTags"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Tag"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+  /tags/{id}/:
+    get:
+      summary: "Retrieves a single tag by id"
+      operationId: "getTagById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+
+  /custom_fields/:
+    get:
+      summary: "Retrieves a paged list of all custom fields"
+      operationId: "getAllCustomFields"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CustomField"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+
+  /custom_fields/{id}/:
+    get:
+      summary: "Retrieves a single custom field by id"
+      operationId: "getCustomFieldById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomField"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+  /logs/:
+    get:
+      summary: "Lists the available types of logs"
+      operationId: "getAllLogTypes"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+                example: ["paperless"]
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+
+  /logs/{type}/:
+    get:
+      summary: "Lists the log entries of the specified type"
+      operationId: "getLogsByType"
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+          example: paperless
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found: The specified log type does not exist."
+  /groups/:
+    get: 
+      summary: "Retrieves a paged list of all groups"
+      operationId: "getAllGroups"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Group"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+  /groups/{id}/:
+    get:
+      summary: "Retrieves a single group by id"
+      operationId: "getGroupById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+  /profile/:
+    get:
+      summary: "Retrieves the profile of the current user"
+      operationId: "getProfile"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+#        - in: query
+# description: "Comma separated list of correspondent IDs to include"
+# explode: false
+# style: form
+# name: correspondent__id__in
+# schema:
+#   type: array
+#   items:
+#     type: integer
+# - in: query
+# explode: false
+# style: form
+# name: correspondent__id__none
+# schema:
+#   type: array
+#   items:
+#     type: integer
+#   description: "Comma separated list of correspondent IDs to exclude"
+
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: "Token {bearerToken}"
+  schemas:
+    BasePagingResponse:
+      type: object
+      required:
+        - count
+        - all
+      properties:
+        count:
+          type: integer
+        all:
+          type: array
+          items:
+            type: integer
+        next:
+          type: string
+        previous:
+          type: string
+    UISettings:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: integer }
+            username: { type: string }
+            is_superuser: { type: boolean }
+        groups:
+          type: array
+          items: { type: integer }
+        settings:
+          type: object
+          properties:
+            update_checking:
+              type: object
+              properties:
+                enabled: { type: string }
+                backend_setting: { type: string }
+            app_title: { type: string }
+            app_logo: { type: string }
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPermission"
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string }
+        password: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        date_joined: { type: string }
+        is_staff: { type: boolean }
+        is_active: { type: boolean }
+        is_superuser: { type: boolean }
+        groups:
+          type: array
+          items: { type: integer }
+        user_permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPermission"
+        inherited_permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/InheritedPermission"
+    Group:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPermission"
+    Document:
+      type: object
+      properties:
+        id: { type: integer }
+        correspondent: { type: integer }
+        document_type: { type: integer }
+        storage_path: { type: integer }
+        tags:
+          type: array
+          items: { type: integer }
+        title: { type: string }
+        content: { type: string }
+        mime_type:
+          type: string
+          readOnly: true
+          maxLength: 256
+        checksum:
+          type: string
+          readOnly: true
+          maxLength: 32
+        archive_checksum:
+          type: string
+          readOnly: true
+          maxLength: 32
+        created:
+          type: string
+          format: date-time
+        created_date:
+          type: string
+          format: date
+        added:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        filename:
+          description: "The current filename in storage"
+          type: string
+          readOnly: true
+          maxLength: 1024
+        archive_filename:
+          description: "The original name of the file when it was uploaded"
+          type: string
+          readOnly: true
+          maxLength: 1024
+        archive_serial_number:
+          description: "The position of this document in your physical document archive"
+          type: integer
+          minimum: 0
+          maximum: 0xFFFFFFFF
+        original_file_name: { type: string }
+        archived_file_name: { type: string }
+        owner: { type: integer }
+        user_can_change: { type: boolean }
+        is_shared_by_requester: { type: boolean }
+        set_permissions:
+          $ref: "#/components/schemas/SetPermissions"
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Note"
+        custom_fields:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: integer }
+              value: {}
+
+      required:
+        - id
+        - title
+        - content
+        - added
+        - checksum
+        - original_file_name
+        - archived_file_name
+    Label:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+        match: { type: string }
+        matching_algorithm:
+          type: integer
+          minimum: 0
+          maximum: 6
+        is_insensitive: { type: boolean }
+        document_count: { type: integer }
+        last_correspondence:
+          type: string
+          format: date-time
+        owner: { type: integer }
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserPermission"
+        user_can_change: { type: boolean }
+        set_permissions:
+          $ref: "#/components/schemas/SetPermissions"
+      required:
+        - id
+        - name
+        - slug
+    Correspondent:
+      allOf:
+        - $ref: "#/components/schemas/Label"
+    StoragePath:
+      allOf:
+        - $ref: "#/components/schemas/Label"
+        - type: object
+          properties:
+            path: { type: string }
+    DocumentType:
+      allOf:
+        - $ref: "#/components/schemas/Label"
+    Tag:
+      allOf:
+        - $ref: "#/components/schemas/Label"
+        - type: object
+          properties:
+            color: { type: string }
+            text_color: { type: string }
+            is_inbox_tag: { type: boolean }
+
+    SetPermissions:
+      description: Model to set permissions on an entity
+      type: object
+      writeOnly: true
+      properties:
+        view:
+          type: object
+          properties:
+            users:
+              type: array
+              items: { type: integer }
+            groups:
+              type: array
+              items: { type: integer }
+        change:
+          type: object
+          properties:
+            users:
+              type: array
+              items: { type: integer }
+            groups:
+              type: array
+              items: { type: integer }
+    InheritedPermission:
+      type: string
+      enum:
+        - contenttypes.delete_contenttype
+        - auth.delete_permission
+        - documents.change_workflow
+        - socialaccount.delete_socialapp
+        - sessions.change_session
+        - documents.add_correspondent
+        - django_celery_results.change_groupresult
+        - documents.view_paperlesstask
+        - documents.change_savedview
+        - authtoken.add_tokenproxy
+        - documents.add_note
+        - documents.view_workflow
+        - documents.add_sharelink
+        - django_celery_results.delete_taskresult
+        - documents.view_customfieldinstance
+        - documents.change_log
+        - paperless_mail.add_mailrule
+        - django_celery_results.view_chordcounter
+        - contenttypes.change_contenttype
+        - sessions.view_session
+        - contenttypes.view_contenttype
+        - paperless_mail.add_processedmail
+        - documents.change_document
+        - documents.delete_savedview
+        - django_celery_results.add_taskresult
+        - django_celery_results.view_taskresult
+        - documents.view_document
+        - documents.change_correspondent
+        - account.add_emailconfirmation
+        - documents.add_customfieldinstance
+        - guardian.delete_groupobjectpermission
+        - guardian.change_groupobjectpermission
+        - guardian.change_userobjectpermission
+        - sessions.delete_session
+        - auth.add_group
+        - guardian.view_userobjectpermission
+        - documents.delete_customfield
+        - django_celery_results.add_groupresult
+        - django_celery_results.delete_groupresult
+        - authtoken.view_token
+        - authtoken.add_token
+        - documents.add_savedviewfilterrule
+        - documents.delete_document
+        - documents.view_correspondent
+        - auth.view_user
+        - paperless_mail.view_mailaccount
+        - socialaccount.delete_socialaccount
+        - socialaccount.add_socialaccount
+        - documents.change_savedviewfilterrule
+        - documents.change_documenttype
+        - socialaccount.add_socialtoken
+        - documents.delete_storagepath
+        - documents.delete_note
+        - account.delete_emailconfirmation
+        - documents.view_tag
+        - paperless.change_applicationconfiguration
+        - documents.view_log
+        - guardian.add_userobjectpermission
+        - account.view_emailconfirmation
+        - documents.view_savedview
+        - documents.add_paperlesstask
+        - documents.change_customfield
+        - paperless.delete_applicationconfiguration
+        - auth.delete_group
+        - documents.view_savedviewfilterrule
+        - documents.delete_customfieldinstance
+        - paperless_mail.delete_mailrule
+        - documents.change_workflowaction
+        - socialaccount.change_socialapp
+        - documents.add_log
+        - auth.change_group
+        - django_celery_results.view_groupresult
+        - paperless.add_applicationconfiguration
+        - socialaccount.add_socialapp
+        - documents.view_storagepath
+        - documents.add_documenttype
+        - documents.change_customfieldinstance
+        - documents.change_uisettings
+        - django_celery_results.change_taskresult
+        - documents.change_sharelink
+        - authtoken.delete_token
+        - documents.delete_workflow
+        - guardian.delete_userobjectpermission
+        - paperless_mail.delete_processedmail
+        - documents.delete_sharelink
+        - documents.add_workflow
+        - socialaccount.delete_socialtoken
+        - admin.add_logentry
+        - paperless_mail.add_mailaccount
+        - auth.add_permission
+        - documents.delete_savedviewfilterrule
+        - documents.add_tag
+        - sessions.add_session
+        - paperless_mail.change_mailrule
+        - account.change_emailconfirmation
+        - socialaccount.view_socialapp
+        - paperless_mail.change_mailaccount
+        - paperless_mail.change_processedmail
+        - documents.delete_workflowtrigger
+        - documents.add_customfield
+        - documents.delete_paperlesstask
+        - guardian.add_groupobjectpermission
+        - documents.add_workflowtrigger
+        - account.view_emailaddress
+        - socialaccount.view_socialtoken
+        - account.change_emailaddress
+        - documents.add_uisettings
+        - documents.view_sharelink
+        - auth.change_user
+        - documents.add_document
+        - contenttypes.add_contenttype
+        - documents.change_note
+        - documents.view_workflowaction
+        - documents.add_storagepath
+        - socialaccount.change_socialtoken
+        - documents.add_savedview
+        - account.add_emailaddress
+        - documents.change_workflowtrigger
+        - documents.add_workflowaction
+        - documents.delete_log
+        - auth.view_group
+        - authtoken.change_token
+        - documents.delete_documenttype
+        - admin.view_logentry
+        - authtoken.view_tokenproxy
+        - documents.delete_tag
+        - auth.view_permission
+        - paperless_mail.view_processedmail
+        - guardian.view_groupobjectpermission
+        - admin.change_logentry
+        - socialaccount.change_socialaccount
+        - documents.change_paperlesstask
+        - auth.add_user
+        - django_celery_results.delete_chordcounter
+        - documents.view_note
+        - paperless_mail.view_mailrule
+        - authtoken.delete_tokenproxy
+        - documents.change_tag
+        - django_celery_results.add_chordcounter
+        - paperless.view_applicationconfiguration
+        - auth.delete_user
+        - documents.delete_correspondent
+        - admin.delete_logentry
+        - django_celery_results.change_chordcounter
+        - authtoken.change_tokenproxy
+        - socialaccount.view_socialaccount
+        - documents.delete_uisettings
+        - documents.change_storagepath
+        - auth.change_permission
+        - paperless_mail.delete_mailaccount
+        - documents.delete_workflowaction
+        - documents.view_documenttype
+        - documents.view_workflowtrigger
+        - account.delete_emailaddress
+        - documents.view_customfield
+        - documents.view_uisettings
+    UserPermission:
+      type: string
+      enum:
+        - add_logentry
+        - change_logentry
+        - delete_logentry
+        - view_logentry
+        - add_group
+        - change_group
+        - delete_group
+        - view_group
+        - add_user
+        - change_user
+        - delete_user
+        - view_user
+        - add_correspondent
+        - change_correspondent
+        - delete_correspondent
+        - view_correspondent
+        - add_customfield
+        - change_customfield
+        - delete_customfield
+        - view_customfield
+        - add_document
+        - change_document
+        - delete_document
+        - view_document
+        - add_documenttype
+        - change_documenttype
+        - delete_documenttype
+        - view_documenttype
+        - add_note
+        - change_note
+        - delete_note
+        - view_note
+        - add_paperlesstask
+        - change_paperlesstask
+        - delete_paperlesstask
+        - view_paperlesstask
+        - add_savedview
+        - change_savedview
+        - delete_savedview
+        - view_savedview
+        - add_sharelink
+        - change_sharelink
+        - delete_sharelink
+        - view_sharelink
+        - add_storagepath
+        - change_storagepath
+        - delete_storagepath
+        - view_storagepath
+        - add_tag
+        - change_tag
+        - delete_tag
+        - view_tag
+        - add_uisettings
+        - change_uisettings
+        - delete_uisettings
+        - view_uisettings
+        - add_workflow
+        - change_workflow
+        - delete_workflow
+        - view_workflow
+        - add_applicationconfiguration
+        - change_applicationconfiguration
+        - delete_applicationconfiguration
+        - view_applicationconfiguration
+        - add_mailaccount
+        - change_mailaccount
+        - delete_mailaccount
+        - view_mailaccount
+        - add_mailrule
+        - change_mailrule
+        - delete_mailrule
+        - view_mailrule
+    Note:
+      type: object
+      required:
+        - id
+        - created
+        - user
+        - document
+      properties:
+        id: { type: integer }
+        note: { type: string }
+        created: { type: string, format: date-time }
+        user: { type: integer }
+        document: { type: integer }
+    CustomField:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        data_type:
+          enum:
+            - documentlink
+            - url
+            - string
+            - monetary
+            - float
+            - integer
+            - boolean
+            - date
+    UserProfile: 
+      type: object
+      properties:
+        email: { type: string }
+        password: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        auth_token: { type: string }
+        social_accounts: { type: array }
+        has_usable_password: { type: boolean }
+      required:
+        - email
+        - password
+        - first_name
+        - last_name
+        - has_usable_password
+        - social_accounts
+    ShareLink:
+      type: object
+      properties:
+        id: { type: integer }
+        created: { type: string, format: date-time }
+        expiration: { type: string, format: date-time }
+        slug: { type: string }
+        document: { type: integer }
+        file_version: 
+          type: string
+          enum:
+            - original
+            - archived
+      required:
+        - id
+        - created
+        - expiration
+        - slug
+        - document
+        - file_version
+    SavedView: 
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        show_on_dashboard: { type: boolean }
+        show_in_sidebar: { type: boolean }
+        sort_field: 
+          $ref: "#/components/schemas/SortField"
+        sort_reverse: { type: boolean }
+        filter_rules: 
+          type: array
+          items:
+            $ref: "#/components/schemas/FilterRule"
+        owner: { type: integer }
+        user_can_change: { type: boolean }
+    SortField: 
+      type: string
+      enum: 
+        - archive_serial_number
+        - correspondent__name
+        - title
+        - document_type__name
+        - created
+        - added
+        - modified
+        - num_notes
+        - owner
+    FilterRule:
+      type: object
+      properties:
+        rule_type:
+          type: integer
+          minimum: 0
+          maximum: 37
+        value: {}
+      required:
+        - rule_type
+      

@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:paperless_api/paperless_api.dart';
-import 'package:paperless_mobile/core/database/tables/local_user_account.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
-import 'package:paperless_mobile/core/repository/user_repository.dart';
-import 'package:paperless_mobile/features/document_details/view/widgets/archive_serial_number_field.dart';
 import 'package:paperless_mobile/features/document_details/view/widgets/details_item.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/helpers/format_helpers.dart';
@@ -14,23 +10,20 @@ class DocumentMetaDataWidget extends StatelessWidget {
   final DocumentModel document;
   final DocumentMetaData metaData;
   final double itemSpacing;
+  final EdgeInsets padding;
   const DocumentMetaDataWidget({
     super.key,
     required this.document,
     required this.metaData,
     required this.itemSpacing,
+    required this.padding,
   });
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = context.watch<LocalUserAccount>().paperlessUser;
-
-    return SliverList.list(
+    return ListView(
+      padding: padding,
       children: [
-        if (currentUser.canEditDocuments)
-          ArchiveSerialNumberField(
-            document: document,
-          ).paddedOnly(bottom: itemSpacing),
         DetailsItem.text(
           DateFormat.yMMMMd(Localizations.localeOf(context).toString())
               .format(document.modified),

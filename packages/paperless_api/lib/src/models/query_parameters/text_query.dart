@@ -1,17 +1,12 @@
-import 'package:equatable/equatable.dart';
-import 'package:hive/hive.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:paperless_api/config/hive/hive_type_ids.dart';
 
 import 'query_type.dart';
 
 part 'text_query.g.dart';
 
-@HiveType(typeId: PaperlessApiHiveTypeIds.textQuery)
+@JsonSerializable()
 class TextQuery {
-  @HiveField(0)
   final QueryType queryType;
-  @HiveField(1)
   final String? queryText;
 
   const TextQuery({
@@ -99,4 +94,9 @@ class TextQuery {
 
   @override
   int get hashCode => Object.hash(queryText, queryType);
+
+  factory TextQuery.fromJson(Map<String, dynamic> json) =>
+      _$TextQueryFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TextQueryToJson(this);
 }

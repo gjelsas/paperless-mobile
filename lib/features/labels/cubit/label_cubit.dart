@@ -22,109 +22,99 @@ class LabelCubit extends Cubit<LabelState> {
     ));
   }
 
-  Future<void> reload({
-    required bool loadCorrespondents,
-    required bool loadDocumentTypes,
-    required bool loadStoragePaths,
-    required bool loadTags,
-  }) {
-    return labelRepository.initialize(
-      loadCorrespondents: loadCorrespondents,
-      loadDocumentTypes: loadDocumentTypes,
-      loadStoragePaths: loadStoragePaths,
-      loadTags: loadTags,
-    );
+  Future<void> reload() {
+    return labelRepository.initialize();
   }
 
   Future<Correspondent> addCorrespondent(Correspondent item) async {
     assert(item.id == null);
-    final addedItem = await labelRepository.createCorrespondent(item);
+    final addedItem = await labelRepository.create<Correspondent>(item);
     return addedItem;
   }
 
   Future<void> reloadCorrespondents() {
-    return labelRepository.findAllCorrespondents();
+    return labelRepository.findAll<Correspondent>();
   }
 
   Future<Correspondent> replaceCorrespondent(Correspondent item) async {
     assert(item.id != null);
-    final updatedItem = await labelRepository.updateCorrespondent(item);
+    final updatedItem = await labelRepository.update<Correspondent>(item);
     return updatedItem;
   }
 
   Future<void> removeCorrespondent(Correspondent item) async {
     assert(item.id != null);
     if (labelRepository.correspondents.containsKey(item.id)) {
-      await labelRepository.deleteCorrespondent(item);
+      await labelRepository.delete<Correspondent>(item);
     }
   }
 
   Future<DocumentType> addDocumentType(DocumentType item) async {
     assert(item.id == null);
-    final addedItem = await labelRepository.createDocumentType(item);
+    final addedItem = await labelRepository.create<DocumentType>(item);
     return addedItem;
   }
 
   Future<void> reloadDocumentTypes() {
-    return labelRepository.findAllDocumentTypes();
+    return labelRepository.findAll<DocumentType>();
   }
 
   Future<DocumentType> replaceDocumentType(DocumentType item) async {
     assert(item.id != null);
-    final updatedItem = await labelRepository.updateDocumentType(item);
+    final updatedItem = await labelRepository.update<DocumentType>(item);
     return updatedItem;
   }
 
   Future<void> removeDocumentType(DocumentType item) async {
     assert(item.id != null);
     if (labelRepository.documentTypes.containsKey(item.id)) {
-      await labelRepository.deleteDocumentType(item);
+      await labelRepository.delete<DocumentType>(item);
     }
   }
 
   Future<StoragePath> addStoragePath(StoragePath item) async {
     assert(item.id == null);
-    final addedItem = await labelRepository.createStoragePath(item);
+    final addedItem = await labelRepository.create<StoragePath>(item);
     return addedItem;
   }
 
   Future<void> reloadStoragePaths() {
-    return labelRepository.findAllStoragePaths();
+    return labelRepository.findAll<StoragePath>();
   }
 
   Future<StoragePath> replaceStoragePath(StoragePath item) async {
     assert(item.id != null);
-    final updatedItem = await labelRepository.updateStoragePath(item);
+    final updatedItem = await labelRepository.update<StoragePath>(item);
     return updatedItem;
   }
 
   Future<void> removeStoragePath(StoragePath item) async {
     assert(item.id != null);
     if (labelRepository.storagePaths.containsKey(item.id)) {
-      await labelRepository.deleteStoragePath(item);
+      await labelRepository.delete<StoragePath>(item);
     }
   }
 
   Future<Tag> addTag(Tag item) async {
     assert(item.id == null);
-    final addedItem = await labelRepository.createTag(item);
+    final addedItem = await labelRepository.create<Tag>(item);
     return addedItem;
   }
 
   Future<void> reloadTags() {
-    return labelRepository.findAllTags();
+    return labelRepository.findAll<Tag>();
   }
 
   Future<Tag> replaceTag(Tag item) async {
     assert(item.id != null);
-    final updatedItem = await labelRepository.updateTag(item);
+    final updatedItem = await labelRepository.update<Tag>(item);
     return updatedItem;
   }
 
   Future<void> removeTag(Tag item) async {
     assert(item.id != null);
     if (labelRepository.tags.containsKey(item.id)) {
-      await labelRepository.deleteTag(item);
+      await labelRepository.delete<Tag>(item);
     }
   }
 

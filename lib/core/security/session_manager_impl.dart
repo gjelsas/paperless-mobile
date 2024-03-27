@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/interceptor/dio_offline_interceptor.dart';
 import 'package:paperless_mobile/core/interceptor/dio_unauthorized_interceptor.dart';
@@ -27,6 +29,9 @@ class SessionManagerImpl extends ValueNotifier<Dio> implements SessionManager {
         contentType: Headers.jsonContentType,
         followRedirects: true,
         maxRedirects: 10,
+        connectTimeout: 5.seconds,
+        sendTimeout: 10.seconds,
+        receiveTimeout: 10.seconds,
       ),
     );
     dio.options
@@ -37,6 +42,10 @@ class SessionManagerImpl extends ValueNotifier<Dio> implements SessionManager {
         () => HttpClient()..badCertificateCallback = (cert, host, port) => true;
     dio.interceptors.addAll([
       ...interceptors,
+      RetryInterceptor(
+        dio: dio,
+        retries: 3,
+      ),
       DioUnauthorizedInterceptor(),
       DioHttpErrorInterceptor(),
       DioOfflineInterceptor(),

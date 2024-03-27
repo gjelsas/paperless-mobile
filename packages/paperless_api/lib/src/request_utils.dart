@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_api/src/extensions/dio_exception_extension.dart';
 import 'package:paperless_api/src/models/paperless_api_exception.dart';
 
@@ -12,7 +13,7 @@ Future<T?> getSingleResult<T>(
   required Dio client,
   int minRequiredApiVersion = 1,
 }) async {
-  try {
+  return performRequestGuarded(() async {
     final response = await client.get(
       url,
       options: Options(
@@ -24,8 +25,31 @@ Future<T?> getSingleResult<T>(
       fromJson,
       response.data as Map<String, dynamic>,
     );
-  } on DioException catch (exception) {
-    throw exception.unravel(orElse: PaperlessApiException(errorCode));
+  }, errorCode);
+}
+
+Future<Iterable<T>> parseCollection<T extends Label>(
+  Response<dynamic> response,
+  T Function(Map<String, dynamic>) fromJson,
+  Iterable<int>? ids,
+) async {
+  final Map<String, dynamic> body = response.data;
+  if (body['count'] == 0) {
+    return <T>[];
+  } else {
+    var results = (body['results'] as List).cast<Map<String, dynamic>>();
+    if (ids != null) {
+      results =
+          results.where((element) => ids.contains(element['id'])).toList();
+    }
+    return results.map((e) => fromJson(e));
+    // return compute(
+    //   _collectionFromJson,
+    //   _CollectionFromJsonSerializationParams(
+    //     fromJson,
+    //     results,
+    //   ),
+    // );
   }
 }
 
@@ -36,7 +60,7 @@ Future<List<T>> getCollection<T>(
   required Dio client,
   int minRequiredApiVersion = 1,
 }) async {
-  try {
+  return performRequestGuarded(() async {
     final response = await client.get(
       url,
       options: Options(
@@ -56,9 +80,7 @@ Future<List<T>> getCollection<T>(
         ),
       );
     }
-  } on DioException catch (exception) {
-    throw exception.unravel(orElse: PaperlessApiException(errorCode));
-  }
+  }, errorCode);
 }
 
 List<T> _collectionFromJson<T>(
@@ -83,4 +105,28 @@ int getExtendedVersionNumber(String version) {
 int? tryParseNullable(String? source, {int? radix}) {
   if (source == null) return null;
   return int.tryParse(source, radix: radix);
+}
+
+/// Ensures only [PaperlessApiException]s are thrown from all requests.
+Future<T> performRequestGuarded<T>(
+  Future<T> Function() callback,
+  ErrorCode errorCode,
+) {
+  try {
+    return callback();
+  } on DioException catch (exception, stackTrace) {
+    throw exception.unravel(
+      orElse: PaperlessApiException(
+        errorCode,
+        error: exception,
+        details: exception.message,
+        stackTrace: stackTrace,
+      ),
+    );
+  } catch (error, stackTrace) {
+    throw PaperlessApiException.unknown(
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
 }

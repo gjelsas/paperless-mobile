@@ -1,126 +1,56 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
-import 'package:pdfx/pdfx.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:paperless_mobile/core/bloc/loading_status.dart';
+import 'package:paperless_mobile/features/document_viewer/cubit/document_viewer_cubit.dart';
+import 'package:paperless_mobile/features/document_viewer/view/file_viewer.dart';
 
-class DocumentView extends StatefulWidget {
-  final Future<Uint8List> bytes;
+class DocumentViewer extends StatefulWidget {
   final String? title;
   final bool showAppBar;
-  final bool showControls;
-  const DocumentView({
-    Key? key,
-    required this.bytes,
+  final Axis scrollDirection;
+  final bool isFullscreen;
+  const DocumentViewer({
+    super.key,
     this.showAppBar = true,
-    this.showControls = true,
     this.title,
-  }) : super(key: key);
+    this.scrollDirection = Axis.horizontal,
+    required this.isFullscreen,
+  });
 
   @override
-  State<DocumentView> createState() => _DocumentViewState();
+  State<DocumentViewer> createState() => _DocumentViewerState();
 }
 
-class _DocumentViewState extends State<DocumentView> {
-  late final PdfController _controller;
-  int _currentPage = 1;
-  int? _totalPages;
-  @override
-  void initState() {
-    super.initState();
-    final document = widget.bytes.then((value) => PdfDocument.openData(value));
-    _controller = PdfController(document: document);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _DocumentViewerState extends State<DocumentViewer> {
   @override
   Widget build(BuildContext context) {
-    final pageTransitionDuration = MediaQuery.disableAnimationsOf(context)
-        ? 0.milliseconds
-        : 100.milliseconds;
-    final canGoToNextPage = _totalPages != null && _currentPage < _totalPages!;
-    final canGoToPreviousPage =
-        _controller.pagesCount != null && _currentPage > 1;
     return Scaffold(
-      appBar: widget.showAppBar
+      appBar: widget.showAppBar && widget.title != null
           ? AppBar(
-              title: widget.title != null ? Text(widget.title!) : null,
+              title: Text(widget.title!),
+              automaticallyImplyLeading: widget.isFullscreen,
             )
           : null,
-      bottomNavigationBar: widget.showControls
-          ? BottomAppBar(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Row(
-                      children: [
-                        IconButton.filled(
-                          onPressed: canGoToPreviousPage
-                              ? () async {
-                                  await _controller.previousPage(
-                                    duration: pageTransitionDuration,
-                                    curve: Curves.easeOut,
-                                  );
-                                }
-                              : null,
-                          icon: const Icon(Icons.arrow_left),
-                        ),
-                        const SizedBox(width: 16),
-                        IconButton.filled(
-                          onPressed: canGoToNextPage
-                              ? () async {
-                                  await _controller.nextPage(
-                                    duration: pageTransitionDuration,
-                                    curve: Curves.easeOut,
-                                  );
-                                }
-                              : null,
-                          icon: const Icon(Icons.arrow_right),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PdfPageNumber(
-                    controller: _controller,
-                    builder: (context, loadingState, page, pagesCount) {
-                      if (loadingState != PdfLoadingState.success) {
-                        return const Text("-/-");
-                      }
-                      return Text(
-                        "$page/$pagesCount",
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ).padded();
-                    },
-                  ),
-                ],
+      body: BlocBuilder<DocumentViewerCubit, DocumentViewerState>(
+        builder: (context, state) {
+          return switch (state.status) {
+            LoadingStatus.initial || LoadingStatus.loading => const Center(
+                child: CircularProgressIndicator(),
               ),
-            )
-          : null,
-      body: PdfView(
-        controller: _controller,
-        onDocumentLoaded: (document) {
-          if (mounted) {
-            setState(() {
-              _totalPages = document.pagesCount;
-            });
-          }
-        },
-        onPageChanged: (page) {
-          if (mounted) {
-            setState(() {
-              _currentPage = page;
-            });
-          }
+            LoadingStatus.loaded => FileViewer(
+                scrollDirection: widget.scrollDirection,
+                fileProvider: (context) => state.data!,
+              ),
+            LoadingStatus.error => const Center(
+                child: Text("Error")), //TODO: Show proper error message
+          };
         },
       ),
     );
   }
 }
+
+
 // import 'dart:async';
 // import 'dart:developer';
 

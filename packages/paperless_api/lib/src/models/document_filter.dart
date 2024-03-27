@@ -1,11 +1,13 @@
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive/hive.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_api/src/models/query_parameters/date_range_queries/date_range_query_field.dart';
 
 part 'document_filter.g.dart';
 
+@JsonSerializable()
 @HiveType(typeId: PaperlessApiHiveTypeIds.documentFilter)
 class DocumentFilter extends Equatable {
   static const DocumentFilter initial = DocumentFilter();
@@ -249,4 +251,8 @@ class DocumentFilter extends Equatable {
         moreLike,
         selectedView,
       ];
+
+  factory DocumentFilter.fromJson(Map<String, dynamic> json) =>
+      _$DocumentFilterFromJson(json);
+  Map<String, dynamic> toJson() => _$DocumentFilterToJson(this);
 }

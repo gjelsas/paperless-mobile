@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
-import 'package:paperless_mobile/features/edit_label/view/impl/add_tag_page.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/routing/routes/labels_route.dart';
 import 'package:paperless_mobile/routing/routes/shells/authenticated_route.dart';
@@ -36,8 +35,8 @@ class _FullscreenTagsFormState extends State<FullscreenTagsForm> {
   final _focusNode = FocusNode();
   late List<Tag> _options;
 
-  List<int> _include = [];
-  List<int> _exclude = [];
+  Set<int> _include = {};
+  Set<int> _exclude = {};
 
   bool _anyAssigned = false;
   bool _notAssigned = false;
@@ -48,10 +47,10 @@ class _FullscreenTagsFormState extends State<FullscreenTagsForm> {
     _options = widget.options.values.toList();
     final value = widget.initialValue;
     if (value is IdsTagsQuery) {
-      _include = value.include.toList();
-      _exclude = value.exclude.toList();
+      _include = value.include;
+      _exclude = value.exclude;
     } else if (value is AnyAssignedTagsQuery) {
-      _include = value.tagIds.toList();
+      _include = value.tagIds.toSet();
       _anyAssigned = true;
     } else if (value is NotAssignedTagsQuery) {
       _notAssigned = true;
@@ -121,8 +120,9 @@ class _FullscreenTagsFormState extends State<FullscreenTagsForm> {
               if (widget.allowOnlySelection) {
                 widget.onSubmit(
                   returnValue: IdsTagsQuery(
-                    include:
-                        _include.sortedBy((id) => widget.options[id]!.name),
+                    include: _include
+                        .sortedBy((id) => widget.options[id]!.name)
+                        .toSet(),
                   ),
                 );
                 return;
@@ -132,12 +132,14 @@ class _FullscreenTagsFormState extends State<FullscreenTagsForm> {
                 query = const NotAssignedTagsQuery();
               } else if (_anyAssigned) {
                 query = AnyAssignedTagsQuery(
-                  tagIds: _include.sortedBy((id) => widget.options[id]!.name),
+                  tagIds: _include,
                 );
               } else {
                 query = IdsTagsQuery(
-                  include: _include.sortedBy((id) => widget.options[id]!.name),
-                  exclude: _exclude.sortedBy((id) => widget.options[id]!.name),
+                  include: _include,
+                  exclude: _exclude
+                      .sortedBy((id) => widget.options[id]!.name)
+                      .toSet(),
                 );
               }
               widget.onSubmit(returnValue: query);
@@ -227,8 +229,8 @@ class _FullscreenTagsFormState extends State<FullscreenTagsForm> {
       onTap: () {
         setState(() {
           _notAssigned = !_notAssigned;
-          _include = [];
-          _exclude = [];
+          _include = {};
+          _exclude = {};
         });
       },
     );

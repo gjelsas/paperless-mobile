@@ -15,8 +15,7 @@ import 'package:paperless_mobile/routing/routes/documents_route.dart';
 import 'package:paperless_mobile/routing/routes/shells/authenticated_route.dart';
 
 class SimilarDocumentsView extends StatefulWidget {
-  final ScrollController pagingScrollController;
-  const SimilarDocumentsView({super.key, required this.pagingScrollController});
+  const SimilarDocumentsView({super.key});
 
   @override
   State<SimilarDocumentsView> createState() => _SimilarDocumentsViewState();
@@ -24,8 +23,6 @@ class SimilarDocumentsView extends StatefulWidget {
 
 class _SimilarDocumentsViewState extends State<SimilarDocumentsView>
     with DocumentPagingViewMixin<SimilarDocumentsView, SimilarDocumentsCubit> {
-  @override
-  ScrollController get pagingScrollController => widget.pagingScrollController;
   @override
   void initState() {
     super.initState();
@@ -52,25 +49,21 @@ class _SimilarDocumentsViewState extends State<SimilarDocumentsView>
               );
             }
             if (state.error != null) {
-              return SliverFillRemaining(
-                child: Center(
-                  child: Text(
-                    translateError(context, state.error!),
-                    textAlign: TextAlign.center,
-                  ),
-                ).padded(),
-              );
+              return Center(
+                child: Text(
+                  translateError(context, state.error!),
+                  textAlign: TextAlign.center,
+                ),
+              ).padded();
             }
             if (state.hasLoaded &&
                 !state.isLoading &&
                 state.documents.isEmpty) {
-              return SliverToBoxAdapter(
-                child: Center(
-                  child: Text(S.of(context)!.noItemsFound),
-                ),
+              return Center(
+                child: Text(S.of(context)!.noItemsFound),
               );
             }
-            return SliverAdaptiveDocumentsView(
+            return DefaultAdaptiveDocumentsView(
               documents: state.documents,
               hasInternetConnection: connectivity.isConnected,
               isLabelClickable: false,
@@ -91,4 +84,7 @@ class _SimilarDocumentsViewState extends State<SimilarDocumentsView>
       },
     );
   }
+
+  @override
+  ScrollController get pagingScrollController => ScrollController();
 }

@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
-import 'package:paperless_mobile/features/edit_label/view/impl/add_tag_page.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/routing/routes/labels_route.dart';
 import 'package:paperless_mobile/routing/routes/shells/authenticated_route.dart';
@@ -27,17 +26,19 @@ class FullscreenMultiSelectionLabelForm extends StatefulWidget {
   });
 
   @override
-  State<FullscreenMultiSelectionLabelForm> createState() => _FullscreenMultiSelectionLabelFormState();
+  State<FullscreenMultiSelectionLabelForm> createState() =>
+      _FullscreenMultiSelectionLabelFormState();
 }
 
-class _FullscreenMultiSelectionLabelFormState extends State<FullscreenMultiSelectionLabelForm> {
+class _FullscreenMultiSelectionLabelFormState
+    extends State<FullscreenMultiSelectionLabelForm> {
   late bool _showClearIcon = false;
   final _textEditingController = TextEditingController();
   final _focusNode = FocusNode();
   late List<Tag> _options;
 
-  List<int> _include = [];
-  List<int> _exclude = [];
+  Set<int> _include = {};
+  Set<int> _exclude = {};
 
   bool _anyAssigned = false;
   bool _notAssigned = false;
@@ -45,13 +46,12 @@ class _FullscreenMultiSelectionLabelFormState extends State<FullscreenMultiSelec
   @override
   void initState() {
     super.initState();
-    _options = widget.options.values.toList();
     final value = widget.initialValue;
     if (value is IdsTagsQuery) {
-      _include = value.include.toList();
-      _exclude = value.exclude.toList();
+      _include = value.include;
+      _exclude = value.exclude;
     } else if (value is AnyAssignedTagsQuery) {
-      _include = value.tagIds.toList();
+      _include = value.tagIds;
       _anyAssigned = true;
     } else if (value is NotAssignedTagsQuery) {
       _notAssigned = true;
@@ -120,10 +120,7 @@ class _FullscreenMultiSelectionLabelFormState extends State<FullscreenMultiSelec
             onPressed: () {
               if (widget.allowOnlySelection) {
                 widget.onSubmit(
-                  returnValue: IdsTagsQuery(
-                    include:
-                        _include.sortedBy((id) => widget.options[id]!.name),
-                  ),
+                  returnValue: IdsTagsQuery(include: _include),
                 );
                 return;
               }
@@ -132,13 +129,10 @@ class _FullscreenMultiSelectionLabelFormState extends State<FullscreenMultiSelec
                 query = const NotAssignedTagsQuery();
               } else if (_anyAssigned) {
                 query = AnyAssignedTagsQuery(
-                  tagIds: _include.sortedBy((id) => widget.options[id]!.name),
+                  tagIds: _include,
                 );
               } else {
-                query = IdsTagsQuery(
-                  include: _include.sortedBy((id) => widget.options[id]!.name),
-                  exclude: _exclude.sortedBy((id) => widget.options[id]!.name),
-                );
+                query = IdsTagsQuery(include: _include, exclude: _exclude);
               }
               widget.onSubmit(returnValue: query);
             },
@@ -227,8 +221,8 @@ class _FullscreenMultiSelectionLabelFormState extends State<FullscreenMultiSelec
       onTap: () {
         setState(() {
           _notAssigned = !_notAssigned;
-          _include = [];
-          _exclude = [];
+          _include = {};
+          _exclude = {};
         });
       },
     );

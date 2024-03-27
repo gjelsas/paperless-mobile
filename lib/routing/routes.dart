@@ -10,7 +10,6 @@ class R {
   static const createSavedView = "createSavedView";
   static const editSavedView = "editSavedView";
   static const documentDetails = "documentDetails";
-  static const editDocument = "editDocument";
   static const labels = "labels";
   static const createLabel = "createLabel";
   static const editLabel = "editLabel";

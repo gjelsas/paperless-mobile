@@ -10,6 +10,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
+import 'package:paperless_mobile/features/document_details/view/widgets/field_suggestions_widget.dart';
 import 'package:paperless_mobile/features/landing/view/widgets/mime_types_pie_chart.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 
@@ -57,6 +58,9 @@ class FormBuilderLocalizedDatePicker extends StatefulWidget {
   final DateTime lastDate;
   final FocusNode? focusNode;
 
+  final Iterable<DateTime>? suggestions;
+  final bool showSuggestions;
+
   /// If set to true, the field will not throw any validation errors when empty.
   final bool allowUnset;
 
@@ -71,6 +75,8 @@ class FormBuilderLocalizedDatePicker extends StatefulWidget {
     this.prefixIcon,
     this.allowUnset = false,
     this.focusNode,
+    this.suggestions,
+    this.showSuggestions = false,
   });
 
   @override
@@ -192,63 +198,87 @@ class _FormBuilderLocalizedDatePickerState
             ? FormDateTime.fromDateTime(widget.initialValue!)
             : null,
         builder: (field) {
-          return GestureDetector(
-            onTap: () {
-              _textFieldControls.first.node.requestFocus();
-            },
-            child: InputDecorator(
-              textAlignVertical: TextAlignVertical.bottom,
-              decoration: InputDecoration(
-                errorText: field.errorText,
-                labelText: widget.labelText,
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.calendar_month_outlined),
-                      onPressed: () async {
-                        final selectedDate = await showDatePicker(
-                          context: context,
-                          initialDate:
-                              field.value?.toDateTime() ?? DateTime.now(),
-                          firstDate: widget.firstDate,
-                          lastDate: widget.lastDate,
-                          initialEntryMode: DatePickerEntryMode.calendarOnly,
-                        );
-                        if (selectedDate != null) {
-                          final formDate =
-                              FormDateTime.fromDateTime(selectedDate);
-                          _temporarilyDisableListeners = true;
-                          _updateInputsWithDate(formDate);
-                          field.didChange(formDate);
-                          _temporarilyDisableListeners = false;
-                        }
-                      },
-                    ),
-                    if (widget.allowUnset)
-                      IconButton(
-                        onPressed: () {
-                          for (var c in _textFieldControls) {
-                            c.controller.clear();
-                          }
-                          _textFieldControls.first.node.requestFocus();
-                          field.didChange(null);
-                        },
-                        icon: const Icon(Icons.clear),
-                      ),
-                  ],
-                ).paddedOnly(right: 4),
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  _textFieldControls.first.node.requestFocus();
+                },
+                child: InputDecorator(
+                  textAlignVertical: TextAlignVertical.bottom,
+                  decoration: InputDecoration(
+                    errorText: field.errorText,
+                    labelText: widget.labelText,
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.calendar_month_outlined),
+                          onPressed: () async {
+                            final selectedDate = await showDatePicker(
+                              context: context,
+                              initialDate:
+                                  field.value?.toDateTime() ?? DateTime.now(),
+                              firstDate: widget.firstDate,
+                              lastDate: widget.lastDate,
+                              initialEntryMode:
+                                  DatePickerEntryMode.calendarOnly,
+                            );
+                            if (selectedDate != null) {
+                              final formDate =
+                                  FormDateTime.fromDateTime(selectedDate);
+                              _temporarilyDisableListeners = true;
+                              _updateInputsWithDate(formDate);
+                              field.didChange(formDate);
+                              _temporarilyDisableListeners = false;
+                            }
+                          },
+                        ),
+                        if (widget.allowUnset)
+                          IconButton(
+                            onPressed: () {
+                              for (var c in _textFieldControls) {
+                                c.controller.clear();
+                              }
+                              _textFieldControls.first.node.requestFocus();
+                              field.didChange(null);
+                            },
+                            icon: const Icon(Icons.clear),
+                          ),
+                      ],
+                    ).paddedOnly(right: 4),
+                  ),
+                  child: Row(
+                    children: [
+                      for (var s in _textFieldControls) ...[
+                        IntrinsicWidth(
+                          child: _buildDateSegmentInput(s, context, field),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-              child: Row(
-                children: [
-                  for (var s in _textFieldControls) ...[
-                    IntrinsicWidth(
-                      child: _buildDateSegmentInput(s, context, field),
-                    ),
-                  ],
-                ],
+              Builder(
+                builder: (context) {
+                  if ((widget.suggestions?.isEmpty ?? true) ||
+                      !widget.showSuggestions) {
+                    return SizedBox.shrink();
+                  }
+                  final filteredSuggestions = widget.suggestions!
+                      .whereNot((e) => e == field.value?.toDateTime());
+                  return FieldSuggestionsWidget<DateTime>(
+                    suggestions: filteredSuggestions,
+                    valueTransformer: (date) => DateFormat.yMd().format(date),
+                    onSuggestionSelected: (date) {
+                      field.didChange(FormDateTime.fromDateTime(date));
+                    },
+                    currentValue: field.value?.toDateTime(),
+                  );
+                },
               ),
-            ),
+            ],
           );
         },
       ),

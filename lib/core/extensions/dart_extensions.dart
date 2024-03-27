@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 extension NullableMapKey<K, V> on Map<K, V> {
   V? tryPutIfAbsent(K key, V? Function() ifAbsent) {
     final value = ifAbsent();

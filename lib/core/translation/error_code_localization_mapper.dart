@@ -84,5 +84,7 @@ String translateError(BuildContext context, ErrorCode code) {
       'Could not delete custom field, please try again.', //TODO: INTL
     ErrorCode.deleteNoteFailed => 'Could not delete note, please try again.',
     ErrorCode.addNoteFailed => 'Could not create note, please try again.',
+    ErrorCode.downloadFailed => "Download failed, please try again.",
+    ErrorCode.documnetMetaDataLoadFailed => "Could not load document metadata.",
   };
 }

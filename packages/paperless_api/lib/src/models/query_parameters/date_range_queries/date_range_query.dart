@@ -13,13 +13,27 @@ part 'date_range_query.g.dart';
 
 sealed class DateRangeQuery with EquatableMixin {
   const DateRangeQuery();
-
   Map<String, String> toQueryParameter(DateRangeQueryField field);
-
   bool matches(DateTime dt);
+
+  factory DateRangeQuery.fromJson(Map<String, dynamic> json) {
+    final type = json['_type'] as String;
+    switch (type) {
+      case 'UnsetDateRangeQuery':
+        return const UnsetDateRangeQuery();
+      case 'RelativeDateRangeQuery':
+        return RelativeDateRangeQuery.fromJson(json);
+      case 'AbsoluteDateRangeQuery':
+        return AbsoluteDateRangeQuery.fromJson(json);
+      default:
+        throw ArgumentError.value(type, 'type', 'Unknown type');
+    }
+  }
+
+  Map<String, dynamic> toJson();
 }
 
-// @HiveType(typeId: PaperlessApiHiveTypeIds.unsetDateRangeQuery)
+@JsonSerializable()
 class UnsetDateRangeQuery extends DateRangeQuery {
   const UnsetDateRangeQuery();
 
@@ -31,13 +45,13 @@ class UnsetDateRangeQuery extends DateRangeQuery {
 
   @override
   List<Object?> get props => [];
+
+  Map<String, dynamic> toJson() => {'_type': runtimeType};
 }
 
-@HiveType(typeId: PaperlessApiHiveTypeIds.relativeDateRangeQuery)
+@JsonSerializable()
 class RelativeDateRangeQuery extends DateRangeQuery {
-  @HiveField(0)
   final int offset;
-  @HiveField(1)
   final DateRangeUnit unit;
 
   const RelativeDateRangeQuery([
@@ -83,10 +97,17 @@ class RelativeDateRangeQuery extends DateRangeQuery {
   bool matches(DateTime dt) {
     return dt.isAfter(dateTime) || dt == dateTime;
   }
+
+  factory RelativeDateRangeQuery.fromJson(Map<String, dynamic> json) =>
+      _$RelativeDateRangeQueryFromJson(json);
+
+  Map<String, dynamic> toJson() => {
+        ..._$RelativeDateRangeQueryToJson(this),
+        '_type': runtimeType.toString(),
+      };
 }
 
 @JsonSerializable()
-@HiveType(typeId: PaperlessApiHiveTypeIds.absoluteDateRangeQuery)
 class AbsoluteDateRangeQuery extends DateRangeQuery {
   @LocalDateTimeJsonConverter()
   @HiveField(0)
@@ -140,30 +161,12 @@ class AbsoluteDateRangeQuery extends DateRangeQuery {
     }
     return matches;
   }
-}
 
-class UnsetDateRangeQueryAdapter extends TypeAdapter<UnsetDateRangeQuery> {
-  @override
-  final int typeId = 113;
+  factory AbsoluteDateRangeQuery.fromJson(Map<String, dynamic> json) =>
+      _$AbsoluteDateRangeQueryFromJson(json);
 
-  @override
-  UnsetDateRangeQuery read(BinaryReader reader) {
-    reader.readByte();
-    return const UnsetDateRangeQuery();
-  }
-
-  @override
-  void write(BinaryWriter writer, UnsetDateRangeQuery obj) {
-    writer.writeByte(0);
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is UnsetDateRangeQueryAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
+  Map<String, dynamic> toJson() => {
+        ..._$AbsoluteDateRangeQueryToJson(this),
+        '_type': runtimeType.toString(),
+      };
 }

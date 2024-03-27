@@ -3,51 +3,36 @@ part of 'saved_view_details_cubit.dart';
 class SavedViewDetailsState extends DocumentPagingState {
   final ViewType viewType;
 
-  final Map<int, Correspondent> correspondents;
-  final Map<int, DocumentType> documentTypes;
-  final Map<int, Tag> tags;
-  final Map<int, StoragePath> storagePaths;
-
   const SavedViewDetailsState({
+    super.status,
     this.viewType = ViewType.list,
     super.filter = const DocumentFilter(),
-    super.hasLoaded,
-    super.isLoading,
     super.value,
-    this.correspondents = const {},
-    this.documentTypes = const {},
-    this.tags = const {},
-    this.storagePaths = const {},
+    super.all,
   });
 
   @override
   List<Object?> get props => [
         viewType,
-        correspondents,
-        documentTypes,
-        tags,
-        storagePaths,
         ...super.props,
       ];
 
   @override
   SavedViewDetailsState copyWithPaged({
-    bool? hasLoaded,
-    bool? isLoading,
+    PagedLoadingStatus? status,
     List<PagedSearchResult<DocumentModel>>? value,
     DocumentFilter? filter,
+    List<int>? all,
   }) {
     return copyWith(
-      hasLoaded: hasLoaded,
-      isLoading: isLoading,
+      status: status,
       value: value,
       filter: filter,
     );
   }
 
   SavedViewDetailsState copyWith({
-    bool? hasLoaded,
-    bool? isLoading,
+    PagedLoadingStatus? status,
     List<PagedSearchResult<DocumentModel>>? value,
     DocumentFilter? filter,
     ViewType? viewType,
@@ -55,17 +40,14 @@ class SavedViewDetailsState extends DocumentPagingState {
     Map<int, DocumentType>? documentTypes,
     Map<int, Tag>? tags,
     Map<int, StoragePath>? storagePaths,
+    List<int>? all,
   }) {
     return SavedViewDetailsState(
-      hasLoaded: hasLoaded ?? this.hasLoaded,
-      isLoading: isLoading ?? this.isLoading,
+      status: status ?? this.status,
+      all: all ?? this.all,
       value: value ?? this.value,
       filter: filter ?? this.filter,
       viewType: viewType ?? this.viewType,
-      correspondents: correspondents ?? this.correspondents,
-      documentTypes: documentTypes ?? this.documentTypes,
-      tags: tags ?? this.tags,
-      storagePaths: storagePaths ?? this.storagePaths,
     );
   }
 }

@@ -1,6 +1,9 @@
-class PaperlessApiException implements Exception {
+import 'package:equatable/equatable.dart';
+
+class PaperlessApiException with EquatableMixin implements Exception {
   final ErrorCode code;
   final String? details;
+  final Object? error;
   final StackTrace? stackTrace;
   final int? httpStatusCode;
 
@@ -8,6 +11,7 @@ class PaperlessApiException implements Exception {
     this.code, {
     this.details,
     this.stackTrace,
+    this.error,
     this.httpStatusCode,
   });
 
@@ -15,16 +19,26 @@ class PaperlessApiException implements Exception {
     String? details,
     StackTrace? stackTrace,
     int? httpStatusCode,
+    Object? error,
   }) : this(
           ErrorCode.unknown,
           details: details,
           stackTrace: stackTrace,
+          error: error,
           httpStatusCode: httpStatusCode,
         );
 
   @override
+  List<Object?> get props => [code, details, error, stackTrace, httpStatusCode];
+
+  @override
   String toString() {
-    return "PaperlessServerException(code: $code${stackTrace != null ? ', stackTrace: ${stackTrace.toString()}' : ''}${httpStatusCode != null ? ', httpStatusCode: $httpStatusCode' : ''})";
+    if (details?.isNotEmpty ?? false) {
+      return details!;
+    } else if (error != null) {
+      return error!.toString();
+    }
+    return super.toString();
   }
 }
 
@@ -82,5 +96,7 @@ enum ErrorCode {
   customFieldLoadFailed,
   customFieldDeleteFailed,
   deleteNoteFailed,
-  addNoteFailed;
+  addNoteFailed,
+  downloadFailed,
+  documnetMetaDataLoadFailed;
 }

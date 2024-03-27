@@ -26,6 +26,8 @@ class PagedSearchResult<T> extends Equatable {
   /// Actual items
   final List<T> results;
 
+  final List<int> all;
+
   int get pageKey {
     if (next != null) {
       final matches = RegExp(pageRegex).allMatches(next!);
@@ -54,6 +56,7 @@ class PagedSearchResult<T> extends Equatable {
     this.next,
     this.previous,
     required this.results,
+    required this.all,
   });
 
   factory PagedSearchResult.fromJson(
@@ -81,12 +84,14 @@ class PagedSearchResult<T> extends Equatable {
     String? next,
     String? previous,
     List<T>? results,
+    List<int>? all,
   }) {
     return PagedSearchResult(
       count: count ?? this.count,
       next: next ?? this.next,
       previous: previous ?? this.previous,
       results: results ?? this.results,
+      all: all ?? this.all,
     );
   }
 
@@ -107,5 +112,6 @@ class PagedSearchResult<T> extends Equatable {
         next,
         previous,
         results,
+        all,
       ];
 }
