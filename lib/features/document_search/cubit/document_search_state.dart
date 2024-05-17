@@ -19,9 +19,9 @@ class DocumentSearchState extends DocumentPagingState {
     this.suggestions = const [],
     this.viewType = ViewType.detailed,
     super.filter = const DocumentFilter(),
-    super.hasLoaded,
-    super.isLoading,
     super.value,
+    super.status = PagedLoadingStatus.initial,
+    super.all = const [],
   });
 
   @override
@@ -35,38 +35,38 @@ class DocumentSearchState extends DocumentPagingState {
 
   @override
   DocumentSearchState copyWithPaged({
-    bool? hasLoaded,
-    bool? isLoading,
     List<PagedSearchResult<DocumentModel>>? value,
     DocumentFilter? filter,
+    PagedLoadingStatus? status,
+    List<int>? all,
   }) {
     return copyWith(
-      hasLoaded: hasLoaded,
-      isLoading: isLoading,
       filter: filter,
       value: value,
+      status: status,
+      all: all,
     );
   }
 
   DocumentSearchState copyWith({
     List<String>? searchHistory,
-    bool? hasLoaded,
-    bool? isLoading,
     List<PagedSearchResult<DocumentModel>>? value,
     DocumentFilter? filter,
     List<String>? suggestions,
     SearchView? view,
     ViewType? viewType,
+    PagedLoadingStatus? status,
+    List<int>? all,
   }) {
     return DocumentSearchState(
       value: value ?? this.value,
       filter: filter ?? this.filter,
-      hasLoaded: hasLoaded ?? this.hasLoaded,
-      isLoading: isLoading ?? this.isLoading,
+      status: status ?? this.status,
       searchHistory: searchHistory ?? this.searchHistory,
       view: view ?? this.view,
       suggestions: suggestions ?? this.suggestions,
       viewType: viewType ?? this.viewType,
+      all: all ?? this.all,
     );
   }
 
