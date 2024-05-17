@@ -5,10 +5,231 @@ info:
 servers:
   - url: http://192.168.178.20:8015/api
     description: "Local development server"
+
 security:
   - BasicAuth: []
   - BearerAuth: []
+
 paths:
+
+  /documents/:
+    get:
+      summary: "Retrieves a paged list of all documents"
+      operationId: "getAllDocuments"
+      parameters:
+        - in: query
+          description: "Comma separated list of correspondents to include"
+          explode: false
+          style: form
+          name: correspondent__id__in
+          schema:
+            type: array
+            items:
+              type: integer
+        - in: query
+          description: "Include documents with any correspondent (0) or none (1) assigned."
+          explode: false
+          style: form
+          name: correspondent__isnull
+          schema:
+            type: integer
+        - in: query
+          description: "Comma separated list of tags to include"
+          explode: false
+          style: form
+          name: tag__id__all
+          schema:
+            type: array
+            items:
+              type: integer
+        - in: query
+          description: "Comma separated list of tags to exclude"
+          explode: false
+          style: form
+          name: tag__id__none
+          schema:
+            type: array
+            items:
+              type: integer 
+        - in: query
+          description: "Include documents with any tag (1) or no tags (0) assigned."
+          name: is_tagged
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 1
+        - in: query
+          description: "Comma separated list of document types to include"
+          explode: false
+          style: form
+          name: document_type__id__in
+          schema:
+            type: array
+            items:
+              type: integer
+        - in: query
+          description: "Include documents with any document type (0) or none (1) assigned."
+          explode: false
+          style: form
+          name: document_type__isnull
+          schema:
+            type: integer
+        - in: query
+          description: "Whether to truncate the content field."
+          name: truncate_content
+          schema:
+            type: boolean
+        - in: query
+          description: "Comma separated list of storage paths to include"
+          explode: false
+          style: form
+          name: storage_path__id__in
+          schema:
+            type: array
+            items:
+              type: integer
+        - in: query
+          description: "Include documents with any storage path (0) or none (1) assigned."
+          explode: false
+          style: form
+          name: storage_path__isnull
+          schema:
+            type: integer
+        - in: query
+          description: "The field to sort the results by"
+          name: ordering
+          schema: 
+            $ref: "#/components/schemas/Ordering"
+        - in: query
+          description: "Include documents created after the given date"
+          name: created__date__gt
+          schema:
+            type: string
+            format: date
+        - in: query
+          description: "Include documents created before the given date"
+          name: created__date__lt
+          schema:
+            type: string
+            format: date
+        - in: query
+          description: "Include documents added after the given date"
+          name: added__date__gt
+          schema:
+            type: string
+            format: date
+        - in: query
+          description: "Include documents added before the given date"
+          name: added__date__lt
+          schema:
+            type: string
+            format: date
+        - in: query
+          description: "Include documents owned by the given user"
+          name: owner__id
+          schema:
+            type: integer
+        - in: query
+          description: "Include documents not owned by the given user (i.e. shared with this user)"
+          name: owner__id__none
+          schema:
+            type: integer
+        - in: query
+          description: "Include documents shared by the given user"
+          name: shared_by__id
+          schema:
+            type: integer
+        - in: query
+          description: "Include documents with (0) or without (1) an owner."
+          name: owner__isnull
+          schema:
+            type: integer
+        - in: query
+          description: "Include the document with the given ASN"
+          name: archive_serial_number
+          schema:
+            type: integer
+        - in: query
+          description: "Include documents with the given expression included in a custom field"
+          name: custom_fields__icontains
+          schema:
+            type: string
+        - in: query
+          description: ""
+          name: title__icontains
+          schema:
+            type: string
+        - in: query
+          description: "Include documents matching the given expression. Supports extended syntax"
+          name: query
+          schema:
+            type: string
+        - in: query
+          description: ""
+          name: title_content
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
+  /documents/{id}/:
+    get:
+      summary: "Retrieves a single document by id"
+      operationId: "getDocumentById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Correspondent"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
   /ui_settings/:
     get:
       summary: "Retrieves the UI settings for the current user"
@@ -22,6 +243,7 @@ paths:
                 $ref: "#/components/schemas/UISettings"
         403:
           description: "Unauthorized"
+
   /correspondents/:
     get:
       summary: "Retrieves a paged list of all correspondents"
@@ -77,6 +299,11 @@ paths:
           description: "Forbidden: The user is not authorized to view this entity."
         404:
           description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
 
   /storage_paths/:
     get:
@@ -133,6 +360,11 @@ paths:
           description: "Forbidden: The user is not authorized to view this entity."
         404:
           description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
 
   /document_types/:
     get:
@@ -189,7 +421,11 @@ paths:
           description: "Forbidden: The user is not authorized to view this entity."
         404:
           description: "Not Found"
-
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
   /tags/:
     get:
       summary: "Retrieves a paged list of all tags"
@@ -245,6 +481,11 @@ paths:
           description: "Forbidden: The user is not authorized to view this entity."
         404:
           description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
 
   /custom_fields/:
     get:
@@ -276,6 +517,13 @@ paths:
                       $ref: "#/components/schemas/CustomField"
         403:
           description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
 
   /custom_fields/{id}/:
     get:
@@ -298,6 +546,12 @@ paths:
           description: "Forbidden: The user is not authorized to view this entity."
         404:
           description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
   /logs/:
     get:
       summary: "Lists the available types of logs"
@@ -336,9 +590,183 @@ paths:
         403:
           description: "Forbidden: The user is not authorized to view this entity."
         404:
-          description: "Not Found: The specified log type does not exist."
-  /groups/:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
+  /saved_views/:
     get: 
+      summary: Retrieves a paged list of all saved views.
+      operationId: "getAllSavedViews"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SavedView"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+  /saved_views/{id}/:
+    get:
+      summary: "Retrieves a single saved view by id"
+      operationId: "getSavedViewById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedView"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+  
+  /tasks/:
+    get: 
+      summary: Retrieves a paged list of all tasks.
+      operationId: "getAllTasks"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: "#/components/schemas/Task"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+  /tasks/{id}/:
+    get:
+      summary: "Retrieves a single task by id"
+      operationId: "getTaskById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
+  /users/:
+    get:
+      summary: "Retrieves a paged list of all users"
+      operationId: "getAllUsers"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+  /users/{id}/:
+    get:
+      summary: "Retrieves a single user by id"
+      operationId: "getUserById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
+  /groups/:
+    get:
       summary: "Retrieves a paged list of all groups"
       operationId: "getAllGroups"
       parameters:
@@ -370,6 +798,7 @@ paths:
           content:
             schema:
               example: "You do not have permission to perform this action."
+
   /groups/{id}/:
     get:
       summary: "Retrieves a single group by id"
@@ -391,6 +820,12 @@ paths:
           description: "Forbidden: The user is not authorized to view this entity."
         404:
           description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
   /profile/:
     get:
       summary: "Retrieves the profile of the current user"
@@ -404,24 +839,192 @@ paths:
                 $ref: "#/components/schemas/UserProfile"
         403:
           description: "Forbidden: The user is not authorized to view this entity."
-#        - in: query
-# description: "Comma separated list of correspondent IDs to include"
-# explode: false
-# style: form
-# name: correspondent__id__in
-# schema:
-#   type: array
-#   items:
-#     type: integer
-# - in: query
-# explode: false
-# style: form
-# name: correspondent__id__none
-# schema:
-#   type: array
-#   items:
-#     type: integer
-#   description: "Comma separated list of correspondent IDs to exclude"
+
+  /mail_accounts/:
+    get:
+      summary: "Retrieves a paged list of all mail accounts"
+      operationId: "getAllMailAccounts"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MailAccount"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+
+  /mail_accounts/{id}/:
+    get:
+      summary: "Retrieves a single mail account by id"
+      operationId: "getMailAccountById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MailAccount"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
+  /mail_rules/:
+    get:
+      summary: "Retrieves a paged list of all mail rules"
+      operationId: "getAllMailRules"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MailRule"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+  /mail_rules/{id}/:
+    get:
+      summary: "Retrieves a single mail rule by id"
+      operationId: "getMailRuleById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MailRule"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
+  /share_links/:
+    get:
+      summary: "Retrieves a paged list of all share links"
+      operationId: "getAllShareLinks"
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            maximum: 100000
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasePagingResponse"
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ShareLink"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+          content:
+            schema:
+              example: "You do not have permission to perform this action."
+
+
+  /share_links/{id}/:
+    get:
+      summary: "Retrieves a single share link by id"
+      operationId: "getShareLinkById"
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareLink"
+        403:
+          description: "Forbidden: The user is not authorized to view this entity."
+        404:
+          description: "Not Found"
+          content: 
+            application/json:
+              schema:
+                properties:
+                  detail: {type: string}
+
 
 components:
   securitySchemes:
@@ -922,7 +1525,7 @@ components:
             - integer
             - boolean
             - date
-    UserProfile: 
+    UserProfile:
       type: object
       properties:
         email: { type: string }
@@ -947,7 +1550,7 @@ components:
         expiration: { type: string, format: date-time }
         slug: { type: string }
         document: { type: integer }
-        file_version: 
+        file_version:
           type: string
           enum:
             - original
@@ -959,25 +1562,25 @@ components:
         - slug
         - document
         - file_version
-    SavedView: 
+    SavedView:
       type: object
       properties:
         id: { type: integer }
         name: { type: string }
         show_on_dashboard: { type: boolean }
         show_in_sidebar: { type: boolean }
-        sort_field: 
+        sort_field:
           $ref: "#/components/schemas/SortField"
         sort_reverse: { type: boolean }
-        filter_rules: 
+        filter_rules:
           type: array
           items:
             $ref: "#/components/schemas/FilterRule"
         owner: { type: integer }
         user_can_change: { type: boolean }
-    SortField: 
+    SortField:
       type: string
-      enum: 
+      enum:
         - archive_serial_number
         - correspondent__name
         - title
@@ -997,4 +1600,109 @@ components:
         value: {}
       required:
         - rule_type
-      
+    Task:
+      type: object
+      properties:
+        id: {type: integer}
+        task_id: { type: string }
+        task_file_name: { type: string }
+        date_created:
+          type: string
+          format: date-time
+        date_done: 
+          type: string
+          format: date-time
+        type: 
+          $ref: "#/components/schemas/TaskType"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+    TaskStatus:
+      type: string
+      enum:
+        - PENDING
+        - STARTED
+        - SUCCESS
+        - FAILURE
+    TaskType:
+      type: string
+      enum:
+        - file
+    MailAccount:
+      type: object
+      properties:
+        id: {type: integer }
+        name: {type: string}
+        imap_server: {type: string}
+        imap_port: {type: integer}
+        imap_security: {type: integer}
+        username: {type: string}
+        password: { type: string}
+        character_set: {type: string}
+        is_token: {type: boolean}
+        owner: {type: integer}
+        user_can_change: {type: boolean}
+      required:
+        - id
+        - name
+        - imap_server
+        - username
+        - password
+        - character_set
+        - is_token
+        - user_can_change
+    MailRule:
+      type: object
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        account: {type: integer}
+        filter_from: {type: string}
+        filter_to: {type: string}
+        filter_subject: {type: string}
+        filter_body: {type: string}
+        filter_attachment_filename_include: {type: string}
+        filter_attachment_filename_exclude: {type: string}
+        maximum_age: {type: integer}
+        action: {type: integer}
+        action_paramter: {type: string}
+        assign_title_from: {type: integer}
+        assign_tags:
+          type: array
+          items: {type: integer}
+        assign_correspondent_from: {type: integer}
+        assign_correspondent: {type: integer}
+        assign_document_type: {type: integer}
+        assign_owner_from_rule: {type: boolean}
+        order: {type: integer}
+        attachment_type: {type: integer}
+        consumption_scope: {type: integer}
+        owner: {type: integer}
+        user_can_change: {type: boolean}
+      required:
+        - id
+        - name
+        - account
+        - maximum_age
+        - action
+        - order
+    Ordering:
+      type: string
+      enum: 
+        - archive_serial_number
+        - -archive_serial_number
+        - correspondent__name
+        - -correspondent__name
+        - title
+        - -title
+        - document_type__name
+        - -document_type__name
+        - created
+        - -created
+        - added
+        - -added
+        - modified
+        - -modified
+        - num_notes
+        - -num_notes
+        - owner
+        - -owner

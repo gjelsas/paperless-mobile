@@ -35,6 +35,9 @@ android/key.properties
 .pub/
 /build/
 .fvm/flutter_sdk
+.fvm/versions
+.fvm/release
+.fvm/version
 
 # Fastlane related
 android/fastlane/report.xml
