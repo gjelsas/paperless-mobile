@@ -200,6 +200,7 @@ class _FormBuilderLocalizedDatePickerState
         builder: (field) {
           return Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
                 onTap: () {

@@ -82,7 +82,10 @@ class _DocumentFilterFormState extends State<DocumentFilterForm> {
         controller: widget.scrollController,
         slivers: [
           if (widget.header != null) widget.header!,
-          ..._buildFormFieldList(labelRepository),
+          SliverPadding(
+              padding: EdgeInsets.only(top: 8),
+              sliver: SliverMainAxisGroup(
+                  slivers: _buildFormFieldList(labelRepository))),
           const SliverToBoxAdapter(
             child: SizedBox(
               height: 32,

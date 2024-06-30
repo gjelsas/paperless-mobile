@@ -78,6 +78,7 @@ class _LabelsPageState extends State<LabelsPage>
           return BlocBuilder<ConnectivityCubit, ConnectivityState>(
             builder: (context, connectedState) {
               return SafeArea(
+                bottom: false,
                 child: Scaffold(
                   drawer: const AppDrawer(),
                   floatingActionButton: ConnectivityAwareActionWrapper(

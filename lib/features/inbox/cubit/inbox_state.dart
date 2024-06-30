@@ -10,45 +10,44 @@ class InboxState extends DocumentPagingState {
   final bool isHintAcknowledged;
 
   const InboxState({
-    super.hasLoaded = false,
-    super.isLoading = false,
     super.value = const [],
     super.filter = const DocumentFilter(),
     this.inboxTags = const [],
     this.isHintAcknowledged = false,
     this.itemsInInboxCount = 0,
+    super.all = const [],
+    super.status = PagedLoadingStatus.initial,
   });
 
   @override
   List<Object?> get props => [
-        hasLoaded,
-        isLoading,
         value,
         filter,
         inboxTags,
         documents,
         isHintAcknowledged,
         itemsInInboxCount,
+        ...super.props,
       ];
 
   InboxState copyWith({
-    bool? hasLoaded,
-    bool? isLoading,
+    PagedLoadingStatus? status,
     Iterable<int>? inboxTags,
     List<PagedSearchResult<DocumentModel>>? value,
     DocumentFilter? filter,
     bool? isHintAcknowledged,
     Map<int, FieldSuggestions>? suggestions,
     int? itemsInInboxCount,
+    List<int>? all,
   }) {
     return InboxState(
-      hasLoaded: hasLoaded ?? super.hasLoaded,
-      isLoading: isLoading ?? super.isLoading,
+      status: status ?? this.status,
       value: value ?? super.value,
       inboxTags: inboxTags ?? this.inboxTags,
       isHintAcknowledged: isHintAcknowledged ?? this.isHintAcknowledged,
       filter: filter ?? super.filter,
       itemsInInboxCount: itemsInInboxCount ?? this.itemsInInboxCount,
+      all: all ?? this.all,
     );
   }
 
@@ -59,15 +58,15 @@ class InboxState extends DocumentPagingState {
 
   @override
   InboxState copyWithPaged({
-    bool? hasLoaded,
-    bool? isLoading,
+    List<int>? all,
+    PagedLoadingStatus? status,
     List<PagedSearchResult<DocumentModel>>? value,
-    DocumentFilter?
-        filter, // Ignored as filter does not change while inbox is open
+    // Filter does not change when inbox is open, therefore this is never really used.
+    DocumentFilter? filter,
   }) {
     return copyWith(
-      hasLoaded: hasLoaded,
-      isLoading: isLoading,
+      all: all,
+      status: status,
       value: value,
       filter: filter,
     );

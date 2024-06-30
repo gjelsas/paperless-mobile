@@ -5,12 +5,14 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:paperless_mobile/accessibility/accessibility_utils.dart';
+import 'package:paperless_mobile/core/bloc/loading_status.dart';
 import 'package:paperless_mobile/core/extensions/document_extensions.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
 import 'package:paperless_mobile/features/document_search/cubit/document_search_cubit.dart';
 import 'package:paperless_mobile/features/document_search/view/remove_history_entry_dialog.dart';
 import 'package:paperless_mobile/features/documents/view/widgets/adaptive_documents_view.dart';
 import 'package:paperless_mobile/features/documents/view/widgets/selection/view_type_selection_widget.dart';
+import 'package:paperless_mobile/features/paged_document_view/cubit/paged_loading_status.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/routing/routes/documents_route.dart';
 import 'package:paperless_mobile/routing/routes/shells/authenticated_route.dart';
@@ -83,7 +85,8 @@ class _DocumentSearchPageState extends State<DocumentSearchPage> {
           preferredSize: const Size.fromHeight(progressIndicatorHeight),
           child: BlocBuilder<DocumentSearchCubit, DocumentSearchState>(
             builder: (context, state) {
-              if (state.isLoading) {
+              // TODO: Check if this should render when loading intially
+              if (state.status == PagedLoadingStatus.loadingMore) {
                 return const LinearProgressIndicator();
               }
               return ColoredBox(color: Theme.of(context).colorScheme.surface);
@@ -144,7 +147,9 @@ class _DocumentSearchPageState extends State<DocumentSearchPage> {
             childCount: suggestions.length,
           ),
         ),
-        if (suggestions.isEmpty && historyMatches.isEmpty && state.hasLoaded)
+        if (suggestions.isEmpty &&
+            historyMatches.isEmpty &&
+            state.status == PagedLoadingStatus.loaded)
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverToBoxAdapter(
@@ -205,7 +210,9 @@ class _DocumentSearchPageState extends State<DocumentSearchPage> {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(child: header),
-        if (state.hasLoaded && !state.isLoading && state.documents.isEmpty)
+        if (state.status == PagedLoadingStatus.loaded &&
+            state.status != PagedLoadingStatus.loading &&
+            state.documents.isEmpty)
           SliverToBoxAdapter(
             child: Center(
               child: Text(S.of(context)!.noDocumentsFound),
@@ -217,9 +224,9 @@ class _DocumentSearchPageState extends State<DocumentSearchPage> {
             documents: state.documents,
             hasInternetConnection: true,
             isLabelClickable: false,
-            isLoading: state.isLoading,
-            hasLoaded: state.hasLoaded,
             enableHeroAnimation: false,
+            isLoading: state.status == PagedLoadingStatus.loading,
+            hasLoaded: state.status == PagedLoadingStatus.loaded,
             onTap: (document) {
               DocumentDetailsRoute(
                 title: document.title,

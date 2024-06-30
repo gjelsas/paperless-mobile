@@ -4,12 +4,9 @@ import 'package:flutter_adaptive_scaffold/flutter_adaptive_scaffold.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:paperless_api/paperless_api.dart';
-import 'package:paperless_mobile/features/app_drawer/view/app_drawer.dart';
 import 'package:paperless_mobile/features/inbox/cubit/inbox_cubit.dart';
-import 'package:paperless_mobile/features/toast/service/toast_service_impl.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/theme.dart';
-import 'package:provider/provider.dart';
 
 class ScaffoldWithNavigationBar extends StatefulWidget {
   final UserModel authenticatedUser;
@@ -32,7 +29,7 @@ class ScaffoldWithNavigationBarState extends State<ScaffoldWithNavigationBar> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: buildOverlayStyle(theme),
       child: AdaptiveScaffold(
-        internalAnimations: true,
+        internalAnimations: false,
         onSelectedIndexChange: (index) {
           widget.navigationShell.goBranch(
             index,

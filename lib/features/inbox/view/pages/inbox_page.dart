@@ -16,6 +16,7 @@ import 'package:paperless_mobile/features/document_search/view/sliver_search_bar
 import 'package:paperless_mobile/features/inbox/cubit/inbox_cubit.dart';
 import 'package:paperless_mobile/features/inbox/view/widgets/inbox_empty_widget.dart';
 import 'package:paperless_mobile/features/inbox/view/widgets/inbox_item.dart';
+import 'package:paperless_mobile/features/paged_document_view/cubit/paged_loading_status.dart';
 import 'package:paperless_mobile/features/paged_document_view/view/document_paging_view_mixin.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/helpers/connectivity_aware_action_wrapper.dart';
@@ -81,7 +82,7 @@ class _InboxPageState extends State<InboxPage>
         offlineBuilder: (context, child) => const SizedBox.shrink(),
         child: BlocBuilder<InboxCubit, InboxState>(
           builder: (context, state) {
-            if (!state.hasLoaded ||
+            if (state.status != PagedLoadingStatus.loaded ||
                 state.documents.isEmpty ||
                 !canEditDocument) {
               return const SizedBox.shrink();
@@ -112,7 +113,8 @@ class _InboxPageState extends State<InboxPage>
                       )
                     : const Icon(Icons.done_all),
               ),
-              onPressed: state.hasLoaded && state.documents.isNotEmpty
+              onPressed: state.status == PagedLoadingStatus.loaded &&
+                      state.documents.isNotEmpty
                   ? () => _onMarkAllAsSeen(
                         state.documents,
                         state.inboxTags,
@@ -123,7 +125,7 @@ class _InboxPageState extends State<InboxPage>
         ),
       ),
       body: SafeArea(
-        top: true,
+        bottom: false,
         child: NestedScrollView(
           key: _nestedScrollViewKey,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -131,14 +133,15 @@ class _InboxPageState extends State<InboxPage>
           ],
           body: BlocBuilder<InboxCubit, InboxState>(
             builder: (_, state) {
-              if (state.documents.isEmpty && state.hasLoaded) {
+              if (state.documents.isEmpty &&
+                  state.status == PagedLoadingStatus.loaded) {
                 return Center(
                   child: InboxEmptyWidget(
                     emptyStateRefreshIndicatorKey:
                         _emptyStateRefreshIndicatorKey,
                   ),
                 );
-              } else if (state.isLoading) {
+              } else if (state.status == PagedLoadingStatus.loading) {
                 return ListView.builder(
                   padding: const EdgeInsets.only(top: 16, left: 16),
                   controller: _scrollController,
@@ -158,7 +161,7 @@ class _InboxPageState extends State<InboxPage>
                               S.of(context)!.swipeLeftToMarkADocumentAsSeen,
                           onHintAcknowledged: () =>
                               context.read<InboxCubit>().acknowledgeHint(),
-                        ),
+                        ).padded(),
                       ),
                       // Build a list of slivers alternating between SliverToBoxAdapter
                       // (group header) and a SliverList (inbox items).
@@ -205,8 +208,7 @@ class _InboxPageState extends State<InboxPage>
                               ),
                             ],
                           )
-                          .flattened
-                          .toList(),
+                          .flattened,
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 78),
                       ),

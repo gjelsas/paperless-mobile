@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/core/repository/label_repository.dart';
 import 'package:paperless_mobile/features/document_details/view/widgets/field_suggestions_widget.dart';
-import 'package:paperless_mobile/features/labels/view/widgets/new/single_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/types.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 
@@ -60,7 +59,14 @@ class MultiLabelSelectionFormBuilderField<T extends Label>
         S.of(context)!.documentsAssigned(label.documentCount ?? 0);
     return ListTile(
       selected: selected,
-      title: Text(label.name),
+      selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+      title: Text(
+        label.name,
+        style: TextStyle(
+            color: selected
+                ? Theme.of(context).colorScheme.onPrimaryContainer
+                : ListTileTheme.of(context).textColor),
+      ),
       trailing: Text(
         documentCountText,
         style: Theme.of(context).textTheme.labelMedium,
@@ -142,7 +148,7 @@ class MultiLabelSelectionFormBuilderField<T extends Label>
                 );
               },
               openBuilder: (context, closeForm) {
-                return _FullScreenSingleLabelSelectionForm<T>(
+                return _FullScreenMultiLabelSelectionForm<T>(
                   initialValue: field.value,
                   optionBuilder: optionBuilder,
                   searchHintText: searchHintText,
@@ -151,6 +157,7 @@ class MultiLabelSelectionFormBuilderField<T extends Label>
                   optionSelector: optionsSelector,
                   onAddLabel: onAddLabel,
                   addNewLabelText: addNewLabelText,
+                  closeForm: (value) => closeForm(returnValue: value),
                 );
               },
               onClosed: (data) {
@@ -179,7 +186,7 @@ class MultiLabelSelectionFormBuilderField<T extends Label>
   }
 }
 
-class _FullScreenSingleLabelSelectionForm<T extends Label>
+class _FullScreenMultiLabelSelectionForm<T extends Label>
     extends StatefulWidget {
   final Iterable<int>? initialValue;
   final LabelRepositorySelector<T> optionSelector;
@@ -189,7 +196,9 @@ class _FullScreenSingleLabelSelectionForm<T extends Label>
   final String emptyOptionsMessage;
   final String addNewLabelText;
   final AddLabelCallback onAddLabel;
-  const _FullScreenSingleLabelSelectionForm({
+  final void Function(Iterable<int>? returnValue) closeForm;
+
+  const _FullScreenMultiLabelSelectionForm({
     super.key,
     this.initialValue,
     required this.optionSelector,
@@ -199,15 +208,16 @@ class _FullScreenSingleLabelSelectionForm<T extends Label>
     required this.emptyOptionsMessage,
     required this.onAddLabel,
     required this.addNewLabelText,
+    required this.closeForm,
   });
 
   @override
-  State<_FullScreenSingleLabelSelectionForm<T>> createState() =>
-      _FullScreenSingleLabelSelectionFormState<T>();
+  State<_FullScreenMultiLabelSelectionForm<T>> createState() =>
+      _FullScreenMultiLabelSelectionFormState<T>();
 }
 
-class _FullScreenSingleLabelSelectionFormState<T extends Label>
-    extends State<_FullScreenSingleLabelSelectionForm<T>> {
+class _FullScreenMultiLabelSelectionFormState<T extends Label>
+    extends State<_FullScreenMultiLabelSelectionForm<T>> {
   late final TextEditingController _textEditingController;
 
   late List<int> _selectedOptions;
@@ -235,19 +245,16 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
       appBar: AppBar(
         leading: const BackButton(),
         centerTitle: false,
-        title: SizedBox(
-          height: kToolbarHeight,
-          child: TextFormField(
-            controller: _textEditingController,
-            decoration: InputDecoration(
-              contentPadding: EdgeInsets.zero,
-              border: const OutlineInputBorder(borderSide: BorderSide.none),
-              hintText: widget.searchHintText,
-              suffix: IconButton(
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.clear),
-                onPressed: () => _textEditingController.clear(),
-              ),
+        title: TextFormField(
+          controller: _textEditingController,
+          decoration: InputDecoration(
+            contentPadding: EdgeInsets.zero,
+            border: const OutlineInputBorder(borderSide: BorderSide.none),
+            hintText: widget.searchHintText,
+            suffix: IconButton(
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.clear),
+              onPressed: () => _textEditingController.clear(),
             ),
           ),
         ),
@@ -255,10 +262,9 @@ class _FullScreenSingleLabelSelectionFormState<T extends Label>
           IconButton(
             icon: const Icon(Icons.done),
             onPressed: () {
-              context.pop(_selectedOptions);
+              widget.closeForm(_selectedOptions);
             },
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: Builder(

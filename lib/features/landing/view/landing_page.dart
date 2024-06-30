@@ -59,101 +59,99 @@ class _LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<LocalUserAccount>().paperlessUser;
-    return SafeArea(
-      child: Scaffold(
-        drawer: const AppDrawer(),
-        body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            SliverOverlapAbsorber(
-              handle: _searchBarHandle,
-              sliver: SliverSearchBar(
-                titleText: S.of(context)!.documents,
-              ),
+    return Scaffold(
+      drawer: const AppDrawer(),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverOverlapAbsorber(
+            handle: _searchBarHandle,
+            sliver: SliverSearchBar(
+              titleText: S.of(context)!.documents,
             ),
-          ],
-          body: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Text(
-                  S.of(context)!.welcomeUser(
-                        currentUser.fullName ?? currentUser.username,
-                      ),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context)
-                      .textTheme
-                      .displaySmall
-                      ?.copyWith(fontSize: 28),
-                ).padded(24),
-              ),
-              SliverToBoxAdapter(child: _buildStatisticsCard(context)),
-              if (currentUser.canViewSavedViews) ...[
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 0, 8),
-                  sliver: SliverToBoxAdapter(
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.saved_search,
-                          color: Theme.of(context).colorScheme.primary,
-                        ).paddedOnly(right: 8),
-                        Text(
-                          S.of(context)!.views,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
+          ),
+        ],
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Text(
+                S.of(context)!.welcomeUser(
+                      currentUser.fullName ?? currentUser.username,
                     ),
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .displaySmall
+                    ?.copyWith(fontSize: 28),
+              ).padded(24),
+            ),
+            SliverToBoxAdapter(child: _buildStatisticsCard(context)),
+            if (currentUser.canViewSavedViews) ...[
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 0, 8),
+                sliver: SliverToBoxAdapter(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.saved_search,
+                        color: Theme.of(context).colorScheme.primary,
+                      ).paddedOnly(right: 8),
+                      Text(
+                        S.of(context)!.views,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
                   ),
                 ),
-                BlocBuilder<SavedViewCubit, SavedViewState>(
-                  builder: (context, state) {
-                    return state.maybeWhen(
-                      loaded: (savedViews) {
-                        final dashboardViews = savedViews.values
-                            .where((element) => element.showOnDashboard)
-                            .toList();
-                        if (dashboardViews.isEmpty) {
-                          return SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  S.of(context)!.youDidNotSaveAnyViewsYet,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ).padded(),
-                                TextButton.icon(
-                                  onPressed: () {
-                                    const CreateSavedViewRoute(
-                                      showOnDashboard: true,
-                                    ).push(context);
-                                  },
-                                  icon: const Icon(Icons.add),
-                                  label: Text(S.of(context)!.newView),
-                                )
-                              ],
-                            ).paddedOnly(left: 16),
-                          );
-                        }
-                        return SliverList.builder(
-                          itemBuilder: (context, index) {
-                            return SavedViewPreview(
-                              savedView: dashboardViews.elementAt(index),
-                              expanded: index == 0,
-                            );
-                          },
-                          itemCount: dashboardViews.length,
+              ),
+              BlocBuilder<SavedViewCubit, SavedViewState>(
+                builder: (context, state) {
+                  return state.maybeWhen(
+                    loaded: (savedViews) {
+                      final dashboardViews = savedViews.values
+                          .where((element) => element.showOnDashboard)
+                          .toList();
+                      if (dashboardViews.isEmpty) {
+                        return SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                S.of(context)!.youDidNotSaveAnyViewsYet,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ).padded(),
+                              TextButton.icon(
+                                onPressed: () {
+                                  const CreateSavedViewRoute(
+                                    showOnDashboard: true,
+                                  ).push(context);
+                                },
+                                icon: const Icon(Icons.add),
+                                label: Text(S.of(context)!.newView),
+                              )
+                            ],
+                          ).paddedOnly(left: 16),
                         );
-                      },
-                      orElse: () => const SliverToBoxAdapter(
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                      }
+                      return SliverList.builder(
+                        itemBuilder: (context, index) {
+                          return SavedViewPreview(
+                            savedView: dashboardViews.elementAt(index),
+                            expanded: index == 0,
+                          );
+                        },
+                        itemCount: dashboardViews.length,
+                      );
+                    },
+                    orElse: () => const SliverToBoxAdapter(
+                      child: Center(
+                        child: CircularProgressIndicator(),
                       ),
-                    );
-                  },
-                ),
-              ],
+                    ),
+                  );
+                },
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

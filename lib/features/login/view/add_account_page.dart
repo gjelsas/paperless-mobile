@@ -43,7 +43,7 @@ class AddAccountPage extends StatefulWidget {
   final Widget? bottomLeftButton;
 
   const AddAccountPage({
-    Key? key,
+    super.key,
     required this.onSubmit,
     required this.submitText,
     required this.titleText,
@@ -53,7 +53,7 @@ class AddAccountPage extends StatefulWidget {
     this.initialPassword,
     this.initialClientCertificate,
     this.bottomLeftButton,
-  }) : super(key: key);
+  });
 
   @override
   State<AddAccountPage> createState() => _AddAccountPageState();
@@ -61,11 +61,11 @@ class AddAccountPage extends StatefulWidget {
 
 class _AddAccountPageState extends State<AddAccountPage> {
   final _formKey = GlobalKey<FormBuilderState>();
+  final _pageController = PageController();
+
   bool _isCheckingConnection = false;
   ReachabilityStatus _reachabilityStatus = ReachabilityStatus.unknown;
-  bool _isFormSubmitted = false;
 
-  final _pageController = PageController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,10 +87,10 @@ class _AddAccountPageState extends State<AddAccountPage> {
                 'Paperless Mobile',
                 style: Theme.of(context).textTheme.displaySmall,
               ).padded(),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               Expanded(
                 child: PageView(
-                  physics: NeverScrollableScrollPhysics(),
+                  physics: const NeverScrollableScrollPhysics(),
                   controller: _pageController,
                   allowImplicitScrolling: false,
                   children: [
@@ -126,14 +126,15 @@ class _AddAccountPageState extends State<AddAccountPage> {
                             //   },
                             //   icon: Icon(Icons.settings),
                             // ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             FilledButton.icon(
                               onPressed: () async {
                                 final status = await _updateReachability();
                                 if (status == ReachabilityStatus.reachable) {
                                   Future.delayed(1.seconds, () {
                                     _pageController.nextPage(
-                                      duration: Duration(milliseconds: 300),
+                                      duration:
+                                          const Duration(milliseconds: 300),
                                       curve: Curves.easeInOut,
                                     );
                                   });
@@ -152,8 +153,8 @@ class _AddAccountPageState extends State<AddAccountPage> {
                                     )
                                   : _reachabilityStatus ==
                                           ReachabilityStatus.reachable
-                                      ? Icon(Icons.done)
-                                      : Icon(Icons.arrow_forward),
+                                      ? const Icon(Icons.done)
+                                      : const Icon(Icons.arrow_forward),
                               label: Text(S.of(context)!.continueLabel),
                             ),
                           ],
@@ -177,11 +178,11 @@ class _AddAccountPageState extends State<AddAccountPage> {
                             TextButton.icon(
                               onPressed: () {
                                 _pageController.previousPage(
-                                  duration: Duration(milliseconds: 300),
+                                  duration: const Duration(milliseconds: 300),
                                   curve: Curves.easeInOut,
                                 );
                               },
-                              icon: Icon(Icons.arrow_back),
+                              icon: const Icon(Icons.arrow_back),
                               label: Text(S.of(context)!.edit),
                             ),
                             FilledButton(
@@ -211,7 +212,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
                   style: Theme.of(context).textTheme.labelLarge,
                   children: [
                     TextSpan(text: S.of(context)!.version(packageInfo.version)),
-                    WidgetSpan(child: SizedBox(width: 24)),
+                    const WidgetSpan(child: SizedBox(width: 24)),
                     TextSpan(
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.primary),
@@ -311,9 +312,6 @@ class _AddAccountPageState extends State<AddAccountPage> {
 
   Future<void> _onSubmit() async {
     FocusScope.of(context).unfocus();
-    setState(() {
-      _isFormSubmitted = true;
-    });
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       final form = _formKey.currentState!.value;
       final clientCertFormModel =
@@ -338,10 +336,6 @@ class _AddAccountPageState extends State<AddAccountPage> {
         showInfoMessage(context, error);
       } catch (error) {
         showGenericError(context, error);
-      } finally {
-        setState(() {
-          _isFormSubmitted = false;
-        });
       }
     }
   }

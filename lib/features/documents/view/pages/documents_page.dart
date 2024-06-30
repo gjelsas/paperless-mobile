@@ -22,8 +22,8 @@ import 'package:paperless_mobile/features/documents/view/widgets/selection/confi
 import 'package:paperless_mobile/features/documents/view/widgets/selection/document_selection_sliver_app_bar.dart';
 import 'package:paperless_mobile/features/documents/view/widgets/selection/view_type_selection_widget.dart';
 import 'package:paperless_mobile/features/documents/view/widgets/sort_documents_button.dart';
-import 'package:paperless_mobile/features/labels/cubit/label_cubit.dart';
 import 'package:paperless_mobile/features/logging/data/logger.dart';
+import 'package:paperless_mobile/features/paged_document_view/cubit/paged_loading_status.dart';
 import 'package:paperless_mobile/features/saved_view/cubit/saved_view_cubit.dart';
 import 'package:paperless_mobile/features/tasks/model/pending_tasks_notifier.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
@@ -140,7 +140,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
       },
       builder: (context, connectivityState) {
         return SafeArea(
-          top: true,
+          bottom: false,
           child: Scaffold(
             drawer: const AppDrawer(),
             floatingActionButton: BlocBuilder<DocumentsCubit, DocumentsState>(
@@ -322,7 +322,8 @@ class _DocumentsPageState extends State<DocumentsPage> {
         final max = notification.metrics.maxScrollExtent;
         final currentState = context.read<DocumentsCubit>().state;
         if (max == 0 ||
-            currentState.isLoading ||
+            currentState.status == PagedLoadingStatus.loading ||
+            currentState.status == PagedLoadingStatus.loadingMore ||
             currentState.isLastPageLoaded) {
           return false;
         }
@@ -403,7 +404,8 @@ class _DocumentsPageState extends State<DocumentsPage> {
             ),
             BlocBuilder<DocumentsCubit, DocumentsState>(
               builder: (context, state) {
-                if (state.hasLoaded && state.documents.isEmpty) {
+                if (state.status == PagedLoadingStatus.loaded &&
+                    state.documents.isEmpty) {
                   return SliverToBoxAdapter(
                     child: DocumentsEmptyState(
                       state: state,
@@ -434,9 +436,9 @@ class _DocumentsPageState extends State<DocumentsPage> {
                   onStoragePathSelected:
                       allowToggleFilter ? _addStoragePathToFilter : null,
                   documents: state.documents,
-                  hasLoaded: state.hasLoaded,
+                  hasLoaded: state.status == PagedLoadingStatus.loaded,
                   isLabelClickable: true,
-                  isLoading: state.isLoading,
+                  isLoading: state.status == PagedLoadingStatus.loading,
                   selectedDocumentIds: state.selectedIds,
                 );
               },

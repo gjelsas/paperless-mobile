@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:paperless_api/paperless_api.dart';
-import 'package:paperless_mobile/features/logging/data/logger.dart';
 import 'package:paperless_mobile/core/notifier/document_changed_notifier.dart';
 import 'package:paperless_mobile/core/repository/label_repository.dart';
 import 'package:paperless_mobile/core/service/connectivity_status_service.dart';
+import 'package:paperless_mobile/features/logging/data/logger.dart';
 import 'package:paperless_mobile/features/paged_document_view/cubit/document_paging_bloc_mixin.dart';
 import 'package:paperless_mobile/features/paged_document_view/cubit/paged_documents_state.dart';
+import 'package:paperless_mobile/features/paged_document_view/cubit/paged_loading_status.dart';
 
 part 'inbox_cubit.g.dart';
 part 'inbox_state.dart';
@@ -107,7 +108,7 @@ class InboxCubit extends HydratedCubit<InboxState>
         // no inbox tags = no inbox items.
         return emit(
           state.copyWith(
-            hasLoaded: true,
+            status: PagedLoadingStatus.loaded,
             value: [],
             inboxTags: [],
           ),
@@ -131,6 +132,7 @@ class InboxCubit extends HydratedCubit<InboxState>
       value: [
         ...state.value,
         PagedSearchResult(
+          all: [...state.all ?? [], document.id],
           count: 1,
           results: [document],
         ),
@@ -150,7 +152,7 @@ class InboxCubit extends HydratedCubit<InboxState>
       // no inbox tags = no inbox items.
       return emit(
         state.copyWith(
-          hasLoaded: true,
+          status: PagedLoadingStatus.loaded,
           value: [],
           inboxTags: [],
         ),
@@ -205,7 +207,7 @@ class InboxCubit extends HydratedCubit<InboxState>
   /// Removes inbox tags from all documents in the inbox.
   ///
   Future<void> clearInbox() async {
-    emit(state.copyWith(isLoading: true));
+    emit(state.copyWith(status: PagedLoadingStatus.loading));
     try {
       await _documentsApi.bulkAction(
         BulkModifyTagsAction.removeTags(
@@ -214,12 +216,12 @@ class InboxCubit extends HydratedCubit<InboxState>
         ),
       );
       emit(state.copyWith(
-        hasLoaded: true,
+        status: PagedLoadingStatus.loaded,
         value: [],
         itemsInInboxCount: 0,
       ));
     } finally {
-      emit(state.copyWith(isLoading: false));
+      emit(state.copyWith(status: PagedLoadingStatus.loaded));
     }
   }
 
@@ -245,11 +247,6 @@ class InboxCubit extends HydratedCubit<InboxState>
   @override
   Map<String, dynamic> toJson(InboxState state) {
     return state.toJson();
-  }
-
-  @override
-  Future<void> close() {
-    return super.close();
   }
 
   @override

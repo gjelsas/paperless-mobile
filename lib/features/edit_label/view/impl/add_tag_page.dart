@@ -11,14 +11,12 @@ import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 
 class AddTagPage extends StatelessWidget {
   final String? initialName;
-  const AddTagPage({Key? key, this.initialName}) : super(key: key);
+  const AddTagPage({super.key, this.initialName});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => LabelCubit(
-        context.read(),
-      ),
+      create: (context) => LabelCubit(context.read()),
       child: AddLabelPage<Tag>(
         pageTitle: Text(S.of(context)!.addTag),
         fromJsonT: Tag.fromJson,

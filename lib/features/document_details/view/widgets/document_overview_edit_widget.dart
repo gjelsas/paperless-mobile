@@ -6,7 +6,6 @@ import 'package:paperless_mobile/core/database/tables/local_user_account.dart';
 import 'package:paperless_mobile/core/widgets/form_builder_fields/form_builder_localized_date_picker.dart';
 import 'package:paperless_mobile/features/document_details/cubit/document_details_cubit.dart';
 import 'package:paperless_mobile/features/document_details/view/widgets/archive_serial_number_form_builder_field.dart';
-import 'package:paperless_mobile/features/labels/tags/view/widgets/tag_widget.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/multi_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/features/labels/view/widgets/new/single_label_selection_form_builder_field.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
@@ -142,6 +141,7 @@ class DocumentOverviewEditWidget extends StatelessWidget {
           Padding(
             padding: itemPadding,
             child: MultiLabelSelectionFormBuilderField<Tag>(
+              initialValue: data.document.tags,
               name: "tags",
               searchHintText: S.of(context)!.startTyping,
               emptySearchMessage: S.of(context)!.noMatchesFound,
@@ -156,7 +156,7 @@ class DocumentOverviewEditWidget extends StatelessWidget {
                 ).push<int>(context);
               },
               displayOptionBuilder: (context, label, onDelete) {
-                return Chip(
+                return InputChip(
                   visualDensity: VisualDensity.compact,
                   label: Text(
                     label.name,
@@ -167,6 +167,7 @@ class DocumentOverviewEditWidget extends StatelessWidget {
                   deleteIcon: Icon(
                     Icons.clear,
                     color: label.textColor,
+                    size: 20,
                   ),
                 );
               },

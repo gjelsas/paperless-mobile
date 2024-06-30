@@ -23,6 +23,7 @@ import 'package:paperless_mobile/features/document_details/view/widgets/document
 import 'package:paperless_mobile/features/document_details/view/widgets/document_share_button.dart';
 import 'package:paperless_mobile/features/document_viewer/view/document_viewer.dart';
 import 'package:paperless_mobile/features/documents/view/widgets/delete_document_confirmation_dialog.dart';
+import 'package:paperless_mobile/features/documents/view/widgets/document_preview.dart';
 import 'package:paperless_mobile/features/similar_documents/cubit/similar_documents_cubit.dart';
 import 'package:paperless_mobile/features/similar_documents/view/similar_documents_view.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
@@ -57,7 +58,7 @@ class DocumentDetailsPage extends StatefulWidget {
 class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool _isSaving = false;
-
+  final _contentScrollController = ScrollController();
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -73,10 +74,11 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
       length: tabLength,
       child: Theme(
         data: Theme.of(context).copyWith(
-            navigationRailTheme: NavigationRailThemeData(
+            navigationRailTheme: const NavigationRailThemeData(
           labelType: NavigationRailLabelType.none,
         )),
         child: SafeArea(
+          bottom: false,
           left: false,
           right: false,
           child: Scaffold(
@@ -118,17 +120,6 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
                                 return SizedBox(
                                   height: kToolbarHeight + kTextTabBarHeight,
                                   child: _buildAppBar(data),
-                                );
-                              },
-                            ),
-                            Breakpoints.mediumAndUp: SlotLayout.from(
-                              key: Key("Top App Bar"),
-                              builder: (context) {
-                                return SizedBox(
-                                  height: kToolbarHeight + kTextTabBarHeight,
-                                  child: _buildAppBar(
-                                    data,
-                                  ),
                                 );
                               },
                             ),
@@ -248,16 +239,19 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage> {
         itemPadding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         verticalPadding: 16,
       ),
-      ListView(
-        children: [
-          FormBuilderTextField(
-            name: "content",
-            initialValue: data.document.content,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-            ),
-          ).padded(),
-        ],
+      Scrollbar(
+        controller: _contentScrollController,
+        interactive: true,
+        child: FormBuilderTextField(
+          scrollController: _contentScrollController,
+          name: "content",
+          initialValue: data.document.content,
+          maxLines: null,
+          decoration: const InputDecoration(
+            contentPadding: EdgeInsets.all(16),
+            border: InputBorder.none,
+          ),
+        ),
       ),
       DocumentMetaDataWidget(
         padding: EdgeInsets.all(16),

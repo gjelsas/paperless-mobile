@@ -42,6 +42,8 @@
 	<string>Allow this app to use FaceID to secure your login credentials.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allow this app to access your photo library to upload images from this device.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Allow this app to access your photo library to upload images from this device.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

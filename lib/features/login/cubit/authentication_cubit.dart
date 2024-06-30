@@ -5,7 +5,6 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/constants.dart';
-import 'package:paperless_mobile/core/bloc/transient_error.dart';
 import 'package:paperless_mobile/core/database/hive/hive_config.dart';
 import 'package:paperless_mobile/core/database/hive/hive_extensions.dart';
 import 'package:paperless_mobile/core/database/tables/global_settings.dart';
@@ -15,13 +14,13 @@ import 'package:paperless_mobile/core/database/tables/local_user_settings.dart';
 import 'package:paperless_mobile/core/database/tables/user_credentials.dart';
 import 'package:paperless_mobile/core/factory/paperless_api_factory.dart';
 import 'package:paperless_mobile/core/interceptor/language_header.interceptor.dart';
-import 'package:paperless_mobile/core/security/session_manager_impl.dart';
-import 'package:paperless_mobile/features/logging/data/logger.dart';
-import 'package:paperless_mobile/features/logging/utils/redaction_utils.dart';
 import 'package:paperless_mobile/core/model/info_message_exception.dart';
 import 'package:paperless_mobile/core/security/session_manager.dart';
+import 'package:paperless_mobile/core/security/session_manager_impl.dart';
 import 'package:paperless_mobile/core/service/connectivity_status_service.dart';
 import 'package:paperless_mobile/core/service/file_service.dart';
+import 'package:paperless_mobile/features/logging/data/logger.dart';
+import 'package:paperless_mobile/features/logging/utils/redaction_utils.dart';
 import 'package:paperless_mobile/features/login/model/client_certificate.dart';
 import 'package:paperless_mobile/features/login/model/login_form_credentials.dart';
 import 'package:paperless_mobile/features/login/model/reachability_status.dart';
@@ -86,7 +85,7 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
               AuthenticatingStage.persistingLocalUserData));
         },
       );
-    } on PaperlessApiException catch (exception, stackTrace) {
+    } on PaperlessApiException catch (_) {
       emit(
         AuthenticationErrorState(
           serverUrl: serverUrl,
@@ -270,8 +269,7 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
       );
       return;
     }
-    final localUserAccountBox =
-        Hive.box<LocalUserAccount>(HiveBoxes.localUserAccount);
+    final localUserAccountBox = Hive.localUserAccountBox;
     final localUserAccount = localUserAccountBox.get(restoreSessionForUser)!;
     if (localUserAccount.settings.isBiometricAuthenticationEnabled) {
       logger.fd(
@@ -354,7 +352,8 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
       methodName: 'restoreSession',
     );
     if (isPaperlessServerReachable) {
-      final apiVersion = await _getApiVersion(_sessionManager.client);
+      final apiVersion = await _getApiVersion(_sessionManager.client,
+          timeout: Duration(seconds: 5));
       await _updateRemoteUser(
         _sessionManager,
         localUserAccount,
@@ -540,6 +539,7 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
     );
 
     await onPersistLocalUserData?.call();
+
     // Create user account
     await userAccountBox.put(
       localUserId,

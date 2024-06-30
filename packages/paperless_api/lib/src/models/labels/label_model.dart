@@ -269,7 +269,7 @@ class StoragePath extends Label {
   explicitToJson: true,
 )
 class Tag extends Label {
-  static const colorKey = 'color';
+  static const colorKey = 'colour';
   static const isInboxTagKey = 'is_inbox_tag';
   static const textColorKey = 'text_color';
   static const legacyColourKey = 'colour';

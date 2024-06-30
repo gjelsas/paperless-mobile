@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' as rp;
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
@@ -31,6 +30,7 @@ import 'package:paperless_mobile/core/exception/server_message_exception.dart';
 import 'package:paperless_mobile/core/factory/paperless_api_factory.dart';
 import 'package:paperless_mobile/core/factory/paperless_api_factory_impl.dart';
 import 'package:paperless_mobile/core/interceptor/language_header.interceptor.dart';
+import 'package:paperless_mobile/core/interceptor/paperless_version_interceptor.dart';
 import 'package:paperless_mobile/core/notifier/document_changed_notifier.dart';
 import 'package:paperless_mobile/core/security/session_manager.dart';
 import 'package:paperless_mobile/core/security/session_manager_impl.dart';
@@ -43,8 +43,6 @@ import 'package:paperless_mobile/features/login/cubit/authentication_cubit.dart'
 import 'package:paperless_mobile/features/login/services/authentication_service.dart';
 import 'package:paperless_mobile/features/notifications/services/local_notification_service.dart';
 import 'package:paperless_mobile/features/settings/view/widgets/global_settings_builder.dart';
-import 'package:paperless_mobile/features/toast/service/toast_service.dart';
-import 'package:paperless_mobile/features/toast/service/toast_service_impl.dart';
 import 'package:paperless_mobile/generated/l10n/app_localizations.dart';
 import 'package:paperless_mobile/helpers/message_helpers.dart';
 import 'package:paperless_mobile/routing/extra_codec.dart';
@@ -157,6 +155,9 @@ void main() async {
     final languageHeaderInterceptor = LanguageHeaderInterceptor(
       () => Hive.globalSettingsBox.getValue()!.preferredLocaleSubtag,
     );
+
+    final versionInterceptor = PaperlessVersionHeaderInterceptor(
+        Hive.localUserAccountBox, Hive.globalSettingsBox);
     // Manages security context, required for self signed client certificates
     final SessionManager sessionManager = SessionManagerImpl([
       PrettyDioLogger(
@@ -169,6 +170,7 @@ void main() async {
         logPrint: (object) => logger.t,
       ),
       languageHeaderInterceptor,
+      versionInterceptor
     ]);
 
     final localNotificationService = LocalNotificationService();
@@ -333,14 +335,14 @@ class _GoRouterShellState extends State<GoRouterShell> {
                         VerifyIdentityRoute(userId: userId).go(context);
                         break;
                       case SwitchingAccountsState():
-                        const SwitchingAccountsRoute().push(context);
+                        const SwitchingAccountsRoute().go(context);
                         break;
                       case AuthenticatedState():
                         const LandingRoute().go(context);
                         break;
                       case AuthenticatingState state:
                         AuthenticatingRoute(state.currentStage.name)
-                            .push(context);
+                            .go(context);
                         break;
                       case LoggingOutState():
                         const LoggingOutRoute().go(context);
@@ -382,12 +384,12 @@ class _GoRouterShellState extends State<GoRouterShell> {
             return MaterialApp.router(
               builder: (context, child) {
                 return AnnotatedRegion<SystemUiOverlayStyle>(
-                  child: child!,
                   value: buildOverlayStyle(
                     Theme.of(context),
                     systemNavigationBarColor:
                         Theme.of(context).colorScheme.background,
                   ),
+                  child: child!,
                 );
               },
               routerConfig: _router,

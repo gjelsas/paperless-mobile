@@ -8,43 +8,39 @@ class LinkedDocumentsState extends DocumentPagingState {
   const LinkedDocumentsState({
     this.viewType = ViewType.list,
     super.filter = const DocumentFilter(),
-    super.isLoading,
-    super.hasLoaded,
     super.value,
+    super.status,
+    super.all,
   });
 
   LinkedDocumentsState copyWith({
     DocumentFilter? filter,
-    bool? isLoading,
-    bool? hasLoaded,
+    PagedLoadingStatus? status,
+    List<int>? all,
     List<PagedSearchResult<DocumentModel>>? value,
     ViewType? viewType,
-    Map<int, Correspondent>? correspondents,
-    Map<int, DocumentType>? documentTypes,
-    Map<int, StoragePath>? storagePaths,
-    Map<int, Tag>? tags,
   }) {
     return LinkedDocumentsState(
       filter: filter ?? this.filter,
-      isLoading: isLoading ?? this.isLoading,
-      hasLoaded: hasLoaded ?? this.hasLoaded,
       value: value ?? this.value,
       viewType: viewType ?? this.viewType,
+      all: all ?? this.all,
+      status: status ?? this.status,
     );
   }
 
   @override
   LinkedDocumentsState copyWithPaged({
-    bool? hasLoaded,
-    bool? isLoading,
+    PagedLoadingStatus? status,
     List<PagedSearchResult<DocumentModel>>? value,
     DocumentFilter? filter,
+    List<int>? all,
   }) {
     return copyWith(
-      hasLoaded: hasLoaded,
-      isLoading: isLoading,
       value: value,
       filter: filter,
+      all: all,
+      status: status,
     );
   }
 

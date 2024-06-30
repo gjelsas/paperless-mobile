@@ -7,6 +7,7 @@ import 'package:paperless_mobile/features/documents/view/widgets/items/document_
 import 'package:paperless_mobile/features/documents/view/widgets/items/document_list_item.dart';
 import 'package:paperless_mobile/features/documents/view/widgets/placeholder/documents_list_loading_widget.dart';
 import 'package:paperless_mobile/features/paged_document_view/cubit/paged_documents_state.dart';
+import 'package:paperless_mobile/features/paged_document_view/cubit/paged_loading_status.dart';
 import 'package:paperless_mobile/features/settings/model/view_type.dart';
 
 abstract class AdaptiveDocumentsView extends StatelessWidget {
@@ -60,8 +61,8 @@ abstract class AdaptiveDocumentsView extends StatelessWidget {
     this.viewType = ViewType.list,
     this.selectedDocumentIds = const [],
   })  : documents = state.documents,
-        isLoading = state.isLoading,
-        hasLoaded = state.hasLoaded;
+        isLoading = state.status == PagedLoadingStatus.loading,
+        hasLoaded = state.status == PagedLoadingStatus.loaded;
 }
 
 class SliverAdaptiveDocumentsView extends AdaptiveDocumentsView {

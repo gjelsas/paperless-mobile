@@ -4,46 +4,45 @@ class SimilarDocumentsState extends DocumentPagingState {
   final ErrorCode? error;
   const SimilarDocumentsState({
     required super.filter,
-    super.hasLoaded,
-    super.isLoading,
     super.value,
     this.error,
+    super.status,
+    super.all,
   });
 
   @override
   List<Object?> get props => [
         filter,
-        hasLoaded,
-        isLoading,
         value,
         error,
+        ...super.props,
       ];
 
   @override
   SimilarDocumentsState copyWithPaged({
-    bool? hasLoaded,
-    bool? isLoading,
+    PagedLoadingStatus? status,
     List<PagedSearchResult<DocumentModel>>? value,
     DocumentFilter? filter,
+    List<int>? all,
   }) {
     return copyWith(
-      hasLoaded: hasLoaded,
-      isLoading: isLoading,
       value: value,
       filter: filter,
+      status: status,
+      all: all,
     );
   }
 
   SimilarDocumentsState copyWith({
-    bool? hasLoaded,
-    bool? isLoading,
+    PagedLoadingStatus? status,
     List<PagedSearchResult<DocumentModel>>? value,
     DocumentFilter? filter,
     ErrorCode? error,
+    List<int>? all,
   }) {
     return SimilarDocumentsState(
-      hasLoaded: hasLoaded ?? this.hasLoaded,
-      isLoading: isLoading ?? this.isLoading,
+      status: status ?? this.status,
+      all: all ?? this.all,
       value: value ?? this.value,
       filter: filter ?? this.filter,
       error: error,

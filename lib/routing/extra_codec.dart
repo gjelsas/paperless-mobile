@@ -4,6 +4,10 @@ import 'dart:typed_data';
 import 'package:paperless_api/paperless_api.dart';
 
 const _labelType = 'LabelType';
+const _documentType = 'DocumentType';
+const _correspondent = 'Correspondent';
+const _tag = 'Tag';
+const _storagePath = 'StoragePath';
 const _documentModel = 'DocumentModel';
 const _documentFilter = 'DocumentFilter';
 const _savedView = 'SavedView';
@@ -40,6 +44,14 @@ class _ExtraDecoder extends Converter<Object?, Object?> {
         return Uint8List.fromList(data as List<int>);
       case _documentFilter:
         return DocumentFilter.fromJson(data as Map<String, dynamic>);
+      case _storagePath:
+        return StoragePath.fromJson(data as Map<String, dynamic>);
+      case _documentType:
+        return DocumentType.fromJson(data as Map<String, dynamic>);
+      case _correspondent:
+        return Correspondent.fromJson(data as Map<String, dynamic>);
+      case _tag:
+        return Tag.fromJson(data as Map<String, dynamic>);
     }
     throw FormatException('Unable tp parse input: $input');
   }
@@ -73,6 +85,26 @@ class _ExtraEncoder extends Converter<Object?, Object?> {
         return <Object?>[
           _uint8List,
           input.toList(),
+        ];
+      case DocumentFilter():
+        return <Object?>[
+          _documentFilter,
+          input.toJson(),
+        ];
+      case StoragePath():
+        return <Object?>[
+          _storagePath,
+          input.toJson(),
+        ];
+      case DocumentType():
+        return <Object?>[
+          _documentType,
+          input.toJson(),
+        ];
+      case Correspondent():
+        return <Object?>[
+          _correspondent,
+          input.toJson(),
         ];
       default:
         throw FormatException(

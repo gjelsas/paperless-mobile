@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:paperless_api/paperless_api.dart';
 import 'package:paperless_mobile/features/paged_document_view/cubit/document_paging_bloc_mixin.dart';
+import 'package:paperless_mobile/features/paged_document_view/cubit/paged_loading_status.dart';
 import 'package:paperless_mobile/helpers/message_helpers.dart';
 
 mixin DocumentPagingViewMixin<T extends StatefulWidget,
@@ -35,7 +36,8 @@ mixin DocumentPagingViewMixin<T extends StatefulWidget,
   bool get shouldLoadMoreDocuments {
     final currState = _bloc.state;
     return pagingScrollController.position.maxScrollExtent != 0 &&
-        !currState.isLoading &&
+        !(currState.status != PagedLoadingStatus.loadingMore ||
+            currState.status != PagedLoadingStatus.loading) &&
         !currState.isLastPageLoaded &&
         pagingScrollController.offset >=
             pagingScrollController.position.maxScrollExtent * 0.75;

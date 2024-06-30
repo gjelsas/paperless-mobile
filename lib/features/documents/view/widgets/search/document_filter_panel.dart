@@ -78,16 +78,20 @@ class _DocumentFilterPanelState extends State<DocumentFilterPanel> {
             onPressed: _onApplyFilter,
           ),
         ),
-        bottomNavigationBar: BottomAppBar(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              TextButton.icon(
-                onPressed: _resetFilter,
-                icon: const Icon(Icons.refresh),
-                label: Text(S.of(context)!.reset),
-              ),
-            ],
+        bottomNavigationBar: MediaQuery.removePadding(
+          context: context,
+          removeBottom: true,
+          child: BottomAppBar(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                TextButton.icon(
+                  onPressed: _resetFilter,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(S.of(context)!.reset),
+                ),
+              ],
+            ),
           ),
         ),
         resizeToAvoidBottomInset: true,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:paperless_mobile/core/extensions/flutter_extensions.dart';
 import 'package:pdfx/pdfx.dart';
@@ -126,7 +127,7 @@ class _LoadedFileViewerState extends State<_LoadedFileViewer> {
       body: PdfViewPinch(
         controller: _controller,
         padding: 8,
-        scrollDirection: widget.scrollDirection,
+        scrollDirection: Axis.horizontal,
         onDocumentLoaded: (document) {
           if (mounted) {
             setState(() {
